@@ -36,7 +36,7 @@ export default function AttendancePage() {
     const today = new Date().toISOString().split('T')[0];
     const todayAttendance = attendance.find(a => a.date === today && a.employeeId === user?.id);
 
-    // Check if mobile device
+    // Check device and attendance status
     useEffect(() => {
         const checkDevice = () => {
             const userAgent = navigator.userAgent.toLowerCase();
@@ -46,9 +46,8 @@ export default function AttendancePage() {
 
             if (todayAttendance?.status === 'present') {
                 setStep('already-marked');
-            } else if (!mobile) {
-                setStep('check');
             } else {
+                // Allow attendance from any device
                 setStep('camera');
             }
         };
@@ -79,7 +78,7 @@ export default function AttendancePage() {
     }, []);
 
     useEffect(() => {
-        if (step === 'camera' && isMobile) {
+        if (step === 'camera') {
             startCamera();
         }
 
@@ -220,48 +219,8 @@ export default function AttendancePage() {
                 );
 
             case 'check':
-                return (
-                    <div className="attendance-capture">
-                        <div style={{
-                            width: 120,
-                            height: 120,
-                            borderRadius: 'var(--radius-full)',
-                            background: 'var(--warning-bg)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: 'var(--space-5)'
-                        }}>
-                            <Smartphone size={56} color="var(--warning)" />
-                        </div>
-
-                        <h2 style={{ marginBottom: 'var(--space-2)' }}>Mobile Only</h2>
-                        <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 'var(--space-5)' }}>
-                            Attendance can only be marked from a mobile device with camera and location access.
-                        </p>
-
-                        <div style={{
-                            background: 'var(--warning-bg)',
-                            padding: 'var(--space-4)',
-                            borderRadius: 'var(--radius-lg)',
-                            marginBottom: 'var(--space-5)'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
-                                <AlertTriangle size={20} color="var(--warning)" style={{ flexShrink: 0, marginTop: 2 }} />
-                                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--warning)' }}>
-                                    Please open this page on your mobile device to mark attendance.
-                                </p>
-                            </div>
-                        </div>
-
-                        <button
-                            className="btn btn-secondary"
-                            onClick={() => navigate('/dashboard')}
-                        >
-                            Back to Dashboard
-                        </button>
-                    </div>
-                );
+                // This case is no longer used as we allow all devices
+                return null;
 
             case 'camera':
                 return (
@@ -495,13 +454,13 @@ export default function AttendancePage() {
                     gap: 'var(--space-2)'
                 }}>
                     <li style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <Smartphone size={16} /> Mobile device only
-                    </li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <Camera size={16} /> Live photo required
+                        <Camera size={16} /> Live photo required (camera access needed)
                     </li>
                     <li style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                         <MapPin size={16} /> Location must be enabled
+                    </li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <Smartphone size={16} /> Works on desktop, tablet, and mobile
                     </li>
                 </ul>
             </div>
