@@ -1,0 +1,16 @@
+{
+    "name": "Grofast Team",
+    "short_name": "Grofast",
+    "description": "Internal team management platform for Grofast Digital",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0A0A0A",
+    "theme_color": "#B91C1C",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}
