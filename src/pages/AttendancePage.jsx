@@ -115,13 +115,16 @@ export default function AttendancePage() {
     };
 
     // Get location
+    // Get location with better error handling
     const getLocation = () => {
         if (!navigator.geolocation) {
-            setLocationError('Geolocation is not supported by your browser');
+            setLocationError('Geolocation is not supported by your browser. You can proceed without location.');
+            setStep('confirm');
             return;
         }
 
         setIsLoading(true);
+        setLocationError(null);
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -144,14 +147,39 @@ export default function AttendancePage() {
             },
             (error) => {
                 setIsLoading(false);
-                setLocationError('Unable to get your location. Please enable location services.');
+                let errorMessage = 'Unable to get your location. ';
+
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += 'Location permission was denied. Please allow location access in your browser settings.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += 'Location information is unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += 'Location request timed out.';
+                        break;
+                    default:
+                        errorMessage += 'Please enable location services.';
+                }
+
+                setLocationError(errorMessage);
+                // Still allow proceeding to confirm step without location
+                setStep('confirm');
             },
             {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
+                enableHighAccuracy: false, // Set to false for faster response
+                timeout: 15000, // Increased timeout
+                maximumAge: 60000 // Allow cached position up to 1 minute
             }
         );
+    };
+
+    // Skip location and proceed
+    const skipLocation = () => {
+        setAddress('Location not available');
+        setLocationError(null);
+        setStep('confirm');
     };
 
     // Submit attendance
@@ -257,9 +285,16 @@ export default function AttendancePage() {
                     <div className="attendance-capture">
                         <div className="loading-spinner" style={{ width: 48, height: 48, marginBottom: 'var(--space-5)' }} />
                         <h2 style={{ marginBottom: 'var(--space-2)' }}>Getting Location</h2>
-                        <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>
+                        <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 'var(--space-5)' }}>
                             Please wait while we fetch your location...
                         </p>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={skipLocation}
+                            style={{ fontSize: 'var(--text-sm)' }}
+                        >
+                            Skip location
+                        </button>
                     </div>
                 );
 
@@ -286,12 +321,29 @@ export default function AttendancePage() {
                         </div>
 
                         {/* Location info */}
-                        <div className="location-info success" style={{ marginBottom: 'var(--space-5)' }}>
-                            <MapPin size={18} />
-                            <span style={{ fontSize: 'var(--text-sm)' }}>
-                                {address.length > 60 ? address.substring(0, 60) + '...' : address}
-                            </span>
-                        </div>
+                        {location ? (
+                            <div className="location-info success" style={{ marginBottom: 'var(--space-5)' }}>
+                                <MapPin size={18} />
+                                <span style={{ fontSize: 'var(--text-sm)' }}>
+                                    {address.length > 60 ? address.substring(0, 60) + '...' : address}
+                                </span>
+                            </div>
+                        ) : (
+                            <div style={{
+                                padding: 'var(--space-3)',
+                                background: 'var(--warning-bg)',
+                                borderRadius: 'var(--radius-lg)',
+                                marginBottom: 'var(--space-5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 'var(--space-2)'
+                            }}>
+                                <AlertTriangle size={18} color="var(--warning)" />
+                                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--warning)' }}>
+                                    Location not available - Attendance will be recorded without location
+                                </span>
+                            </div>
+                        )}
 
                         {/* Time */}
                         <div style={{
