@@ -32,6 +32,7 @@ export default function AttendancePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [deviceInfo, setDeviceInfo] = useState('');
+    const [cameraReady, setCameraReady] = useState(false);
 
     const today = new Date().toISOString().split('T')[0];
     const todayAttendance = attendance.find(a => a.date === today && a.employeeId === user?.id);
@@ -56,13 +57,16 @@ export default function AttendancePage() {
     }, [todayAttendance]);
 
     // Initialize camera
+    // Initialize camera with better settings
     const startCamera = useCallback(async () => {
+        setCameraReady(false);
         try {
             const mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: 'user',
-                    width: { ideal: 720 },
-                    height: { ideal: 960 }
+                    width: { ideal: 1280, min: 640 },
+                    height: { ideal: 960, min: 480 },
+                    frameRate: { ideal: 30 }
                 },
                 audio: false
             });
@@ -70,10 +74,24 @@ export default function AttendancePage() {
             setStream(mediaStream);
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
+                // Wait for video to be ready
+                videoRef.current.onloadedmetadata = () => {
+                    setCameraReady(true);
+                };
             }
         } catch (error) {
             console.error('Camera error:', error);
-            setLocationError('Camera access denied. Please enable camera permissions.');
+            let errorMsg = 'Camera access denied. ';
+            if (error.name === 'NotAllowedError') {
+                errorMsg += 'Please allow camera access in your browser settings.';
+            } else if (error.name === 'NotFoundError') {
+                errorMsg += 'No camera found on this device.';
+            } else if (error.name === 'NotReadableError') {
+                errorMsg += 'Camera is in use by another application.';
+            } else {
+                errorMsg += 'Please check your camera permissions.';
+            }
+            setLocationError(errorMsg);
         }
     }, []);
 
@@ -89,7 +107,7 @@ export default function AttendancePage() {
         };
     }, [step, isMobile, startCamera, stream]);
 
-    // Capture photo
+    // Capture photo with mirror effect
     const capturePhoto = () => {
         if (videoRef.current && canvasRef.current) {
             const canvas = canvasRef.current;
@@ -99,9 +117,16 @@ export default function AttendancePage() {
             canvas.height = video.videoHeight;
 
             const ctx = canvas.getContext('2d');
+
+            // Mirror the image to match what user sees
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0);
 
-            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            // Reset transform
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+            const imageData = canvas.toDataURL('image/jpeg', 0.9); // Higher quality
             setPhoto(imageData);
 
             // Stop camera
@@ -253,29 +278,80 @@ export default function AttendancePage() {
             case 'camera':
                 return (
                     <div className="attendance-capture">
-                        <h2 style={{ marginBottom: 'var(--space-4)' }}>Take a Selfie</h2>
-                        <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 'var(--space-5)' }}>
-                            Position your face in the frame and tap capture
+                        <h2 style={{ marginBottom: 'var(--space-2)' }}>Take a Selfie</h2>
+                        <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 'var(--space-4)', fontSize: 'var(--text-sm)' }}>
+                            📸 Keep your face centered • Good lighting • Hold steady
                         </p>
 
-                        <div className="camera-preview">
+                        <div className="camera-preview" style={{ position: 'relative' }}>
+                            {/* Loading overlay */}
+                            {!cameraReady && (
+                                <div style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: 'var(--bg-secondary)',
+                                    zIndex: 2
+                                }}>
+                                    <div className="loading-spinner" style={{ width: 40, height: 40, marginBottom: 'var(--space-3)' }} />
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>Starting camera...</p>
+                                </div>
+                            )}
+
+                            {/* Face guide overlay */}
+                            <div style={{
+                                position: 'absolute',
+                                inset: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                pointerEvents: 'none',
+                                zIndex: 1
+                            }}>
+                                <div style={{
+                                    width: '70%',
+                                    height: '60%',
+                                    border: '3px dashed rgba(255,255,255,0.4)',
+                                    borderRadius: '50%',
+                                    boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3)'
+                                }} />
+                            </div>
+
                             <video
                                 ref={videoRef}
                                 autoPlay
                                 playsInline
                                 muted
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    transform: 'scaleX(-1)' // Mirror effect for selfie
+                                }}
                             />
                         </div>
                         <canvas ref={canvasRef} style={{ display: 'none' }} />
 
+                        <p style={{
+                            color: 'var(--text-muted)',
+                            fontSize: 'var(--text-xs)',
+                            textAlign: 'center',
+                            marginTop: 'var(--space-3)'
+                        }}>
+                            Align your face inside the oval guide
+                        </p>
+
                         <button
                             className="btn btn-primary btn-lg"
                             onClick={capturePhoto}
-                            style={{ marginTop: 'var(--space-5)' }}
+                            disabled={!cameraReady}
+                            style={{ marginTop: 'var(--space-4)' }}
                         >
                             <Camera size={24} />
-                            Capture Photo
+                            {cameraReady ? 'Capture Photo' : 'Loading Camera...'}
                         </button>
                     </div>
                 );
