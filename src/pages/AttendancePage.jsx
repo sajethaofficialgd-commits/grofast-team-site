@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -56,56 +56,60 @@ export default function AttendancePage() {
         checkDevice();
     }, [todayAttendance]);
 
-    // Initialize camera
-    // Initialize camera with better settings
-    const startCamera = useCallback(async () => {
-        setCameraReady(false);
-        try {
-            const mediaStream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: 'user',
-                    width: { ideal: 1280, min: 640 },
-                    height: { ideal: 960, min: 480 },
-                    frameRate: { ideal: 30 }
-                },
-                audio: false
-            });
+    // Camera is now initialized directly in useEffect below
 
-            setStream(mediaStream);
-            if (videoRef.current) {
-                videoRef.current.srcObject = mediaStream;
-                // Wait for video to be ready
-                videoRef.current.onloadedmetadata = () => {
-                    setCameraReady(true);
-                };
-            }
-        } catch (error) {
-            console.error('Camera error:', error);
-            let errorMsg = 'Camera access denied. ';
-            if (error.name === 'NotAllowedError') {
-                errorMsg += 'Please allow camera access in your browser settings.';
-            } else if (error.name === 'NotFoundError') {
-                errorMsg += 'No camera found on this device.';
-            } else if (error.name === 'NotReadableError') {
-                errorMsg += 'Camera is in use by another application.';
-            } else {
-                errorMsg += 'Please check your camera permissions.';
-            }
-            setLocationError(errorMsg);
-        }
-    }, []);
-
+    // Start camera when step changes to 'camera'
     useEffect(() => {
+        let currentStream = null;
+
         if (step === 'camera') {
-            startCamera();
+            const initCamera = async () => {
+                setCameraReady(false);
+                try {
+                    const mediaStream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: 'user',
+                            width: { ideal: 1280, min: 640 },
+                            height: { ideal: 960, min: 480 },
+                            frameRate: { ideal: 30 }
+                        },
+                        audio: false
+                    });
+
+                    currentStream = mediaStream;
+                    setStream(mediaStream);
+
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = mediaStream;
+                        videoRef.current.onloadedmetadata = () => {
+                            setCameraReady(true);
+                        };
+                    }
+                } catch (error) {
+                    console.error('Camera error:', error);
+                    let errorMsg = 'Camera access denied. ';
+                    if (error.name === 'NotAllowedError') {
+                        errorMsg += 'Please allow camera access in your browser settings.';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMsg += 'No camera found on this device.';
+                    } else if (error.name === 'NotReadableError') {
+                        errorMsg += 'Camera is in use by another application.';
+                    } else {
+                        errorMsg += 'Please check your camera permissions.';
+                    }
+                    setLocationError(errorMsg);
+                }
+            };
+
+            initCamera();
         }
 
         return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
             }
         };
-    }, [step, isMobile, startCamera, stream]);
+    }, [step]); // Only depend on step
 
     // Capture photo with mirror effect
     const capturePhoto = () => {
