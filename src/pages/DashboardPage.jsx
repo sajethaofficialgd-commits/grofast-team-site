@@ -208,6 +208,199 @@ export default function DashboardPage() {
                 ))}
             </div>
 
+            {/* Charts Section */}
+            <div style={{ marginBottom: 'var(--space-6)' }}>
+                <h3 style={{
+                    fontSize: 'var(--text-lg)',
+                    fontWeight: 700,
+                    marginBottom: 'var(--space-4)'
+                }}>
+                    This Week's Overview
+                </h3>
+
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: 'var(--space-4)'
+                }}>
+                    {/* Attendance Pie Chart */}
+                    <div className="card">
+                        <div className="card-body" style={{ textAlign: 'center' }}>
+                            <h4 style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-3)', color: 'var(--text-secondary)' }}>
+                                Attendance
+                            </h4>
+                            <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto' }}>
+                                <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                                    {/* Background circle */}
+                                    <circle
+                                        cx="18" cy="18" r="14"
+                                        fill="none"
+                                        stroke="var(--bg-elevated)"
+                                        strokeWidth="4"
+                                    />
+                                    {/* Present (green) - 80% */}
+                                    <circle
+                                        cx="18" cy="18" r="14"
+                                        fill="none"
+                                        stroke="#10B981"
+                                        strokeWidth="4"
+                                        strokeDasharray="70.4 17.6"
+                                        strokeLinecap="round"
+                                    />
+                                    {/* Late (yellow) - 15% */}
+                                    <circle
+                                        cx="18" cy="18" r="14"
+                                        fill="none"
+                                        stroke="#F59E0B"
+                                        strokeWidth="4"
+                                        strokeDasharray="13.2 74.8"
+                                        strokeDashoffset="-70.4"
+                                        strokeLinecap="round"
+                                    />
+                                    {/* Absent (red) - 5% */}
+                                    <circle
+                                        cx="18" cy="18" r="14"
+                                        fill="none"
+                                        stroke="#EF4444"
+                                        strokeWidth="4"
+                                        strokeDasharray="4.4 83.6"
+                                        strokeDashoffset="-83.6"
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+                                <div style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexDirection: 'column'
+                                }}>
+                                    <span style={{ fontSize: 'var(--text-xl)', fontWeight: 800 }}>80%</span>
+                                </div>
+                            </div>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                gap: 'var(--space-3)',
+                                marginTop: 'var(--space-3)',
+                                fontSize: 'var(--text-xs)'
+                            }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+                                    Present
+                                </span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B' }} />
+                                    Late
+                                </span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444' }} />
+                                    Absent
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Performance Score Ring */}
+                    <div className="card">
+                        <div className="card-body" style={{ textAlign: 'center' }}>
+                            <h4 style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-3)', color: 'var(--text-secondary)' }}>
+                                Performance
+                            </h4>
+                            <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto' }}>
+                                <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                                    <circle
+                                        cx="18" cy="18" r="14"
+                                        fill="none"
+                                        stroke="var(--bg-elevated)"
+                                        strokeWidth="3"
+                                    />
+                                    <circle
+                                        cx="18" cy="18" r="14"
+                                        fill="none"
+                                        stroke="url(#performanceGradient)"
+                                        strokeWidth="3"
+                                        strokeDasharray="74.8 13.2"
+                                        strokeLinecap="round"
+                                    />
+                                    <defs>
+                                        <linearGradient id="performanceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stopColor="#B91C1C" />
+                                            <stop offset="100%" stopColor="#F59E0B" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexDirection: 'column'
+                                }}>
+                                    <span style={{ fontSize: 'var(--text-xl)', fontWeight: 800 }}>85</span>
+                                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Score</span>
+                                </div>
+                            </div>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                gap: 'var(--space-2)',
+                                marginTop: 'var(--space-3)',
+                                fontSize: 'var(--text-xs)',
+                                color: 'var(--success)'
+                            }}>
+                                <TrendingUp size={14} />
+                                +5% from last week
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Weekly Activity Bar Chart */}
+            <div className="card" style={{ marginBottom: 'var(--space-6)' }}>
+                <div className="card-body">
+                    <h4 style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)', color: 'var(--text-secondary)' }}>
+                        Weekly Activity
+                    </h4>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                        justifyContent: 'space-between',
+                        height: 80,
+                        gap: 'var(--space-2)'
+                    }}>
+                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
+                            const heights = [85, 70, 90, 60, 95, 40, 30];
+                            const isToday = i === new Date().getDay() - 1;
+                            return (
+                                <div key={day} style={{ flex: 1, textAlign: 'center' }}>
+                                    <div style={{
+                                        height: `${heights[i]}%`,
+                                        background: isToday
+                                            ? 'var(--primary-gradient)'
+                                            : 'var(--bg-elevated)',
+                                        borderRadius: 'var(--radius-md)',
+                                        marginBottom: 'var(--space-2)',
+                                        transition: 'all 300ms ease',
+                                        minHeight: 8
+                                    }} />
+                                    <span style={{
+                                        fontSize: 'var(--text-xs)',
+                                        color: isToday ? 'var(--primary)' : 'var(--text-muted)',
+                                        fontWeight: isToday ? 600 : 400
+                                    }}>
+                                        {day}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
             {/* Stats Row */}
             <div style={{
                 display: 'grid',
