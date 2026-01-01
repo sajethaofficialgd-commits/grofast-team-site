@@ -25,11 +25,11 @@ export default function DailyUpdatePage() {
 
     // Form state
     const [formData, setFormData] = useState({
-        yesterdayWork: '',
-        todayPlan: '',
+        yesterdayPending: '',
+        todayWork: '',
+        tomorrowPlan: '',
         blockers: '',
-        timeSpent: '',
-        attachments: []
+        timeSpent: ''
     });
 
     const today = new Date().toISOString().split('T')[0];
@@ -60,11 +60,11 @@ export default function DailyUpdatePage() {
             await submitWorkUpdate(formData);
             setShowSuccess(true);
             setFormData({
-                yesterdayWork: '',
-                todayPlan: '',
+                yesterdayPending: '',
+                todayWork: '',
+                tomorrowPlan: '',
                 blockers: '',
-                timeSpent: '',
-                attachments: []
+                timeSpent: ''
             });
 
             setTimeout(() => setShowSuccess(false), 3000);
@@ -91,9 +91,9 @@ export default function DailyUpdatePage() {
         }
     };
 
-    const cutoffTime = '11:00 AM';
+    const cutoffTime = '9:00 PM';
     const currentTime = new Date();
-    const isPastCutoff = currentTime.getHours() >= 11;
+    const isPastCutoff = currentTime.getHours() >= 21; // 9 PM = 21:00
 
     return (
         <div className="animate-fade-in">
@@ -215,12 +215,56 @@ export default function DailyUpdatePage() {
                             <div className="card">
                                 <div className="card-body">
                                     <div className="form-group">
-                                        <label className="form-label">Yesterday's Work *</label>
+                                        <label className="form-label">
+                                            <span style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 'var(--space-2)',
+                                                marginBottom: 'var(--space-1)'
+                                            }}>
+                                                📋 Yesterday's Pending Work
+                                            </span>
+                                            <span style={{
+                                                fontSize: 'var(--text-xs)',
+                                                color: 'var(--text-muted)',
+                                                display: 'block'
+                                            }}>
+                                                What work was left incomplete from yesterday?
+                                            </span>
+                                        </label>
                                         <textarea
-                                            name="yesterdayWork"
+                                            name="yesterdayPending"
                                             className="form-textarea"
-                                            placeholder="What did you accomplish yesterday?"
-                                            value={formData.yesterdayWork}
+                                            placeholder="• List any tasks that were not completed yesterday\n• Mention reasons if any\n• Leave empty if all tasks were completed"
+                                            value={formData.yesterdayPending}
+                                            onChange={handleInputChange}
+                                            rows={3}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">
+                                            <span style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 'var(--space-2)',
+                                                marginBottom: 'var(--space-1)'
+                                            }}>
+                                                ✅ Today's Work *
+                                            </span>
+                                            <span style={{
+                                                fontSize: 'var(--text-xs)',
+                                                color: 'var(--text-muted)',
+                                                display: 'block'
+                                            }}>
+                                                What did you accomplish today?
+                                            </span>
+                                        </label>
+                                        <textarea
+                                            name="todayWork"
+                                            className="form-textarea"
+                                            placeholder="• List all tasks completed today\n• Include meetings attended\n• Mention key achievements"
+                                            value={formData.todayWork}
                                             onChange={handleInputChange}
                                             required
                                             rows={4}
@@ -228,12 +272,28 @@ export default function DailyUpdatePage() {
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="form-label">Today's Plan *</label>
+                                        <label className="form-label">
+                                            <span style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 'var(--space-2)',
+                                                marginBottom: 'var(--space-1)'
+                                            }}>
+                                                🎯 Tomorrow's Plan *
+                                            </span>
+                                            <span style={{
+                                                fontSize: 'var(--text-xs)',
+                                                color: 'var(--text-muted)',
+                                                display: 'block'
+                                            }}>
+                                                What do you plan to work on tomorrow?
+                                            </span>
+                                        </label>
                                         <textarea
-                                            name="todayPlan"
+                                            name="tomorrowPlan"
                                             className="form-textarea"
-                                            placeholder="What do you plan to work on today?"
-                                            value={formData.todayPlan}
+                                            placeholder="• List tasks you will work on tomorrow\n• Include priority tasks first\n• Mention any pending items to complete"
+                                            value={formData.tomorrowPlan}
                                             onChange={handleInputChange}
                                             required
                                             rows={4}
@@ -241,7 +301,16 @@ export default function DailyUpdatePage() {
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="form-label">Blockers (if any)</label>
+                                        <label className="form-label">
+                                            <span style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 'var(--space-2)',
+                                                marginBottom: 'var(--space-1)'
+                                            }}>
+                                                ⚠️ Blockers (if any)
+                                            </span>
+                                        </label>
                                         <textarea
                                             name="blockers"
                                             className="form-textarea"
@@ -250,22 +319,6 @@ export default function DailyUpdatePage() {
                                             onChange={handleInputChange}
                                             rows={2}
                                         />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Time Spent (Optional)</label>
-                                        <select
-                                            name="timeSpent"
-                                            className="form-select"
-                                            value={formData.timeSpent}
-                                            onChange={handleInputChange}
-                                        >
-                                            <option value="">Select hours</option>
-                                            <option value="< 4 hours">Less than 4 hours</option>
-                                            <option value="4-6 hours">4-6 hours</option>
-                                            <option value="6-8 hours">6-8 hours</option>
-                                            <option value="8+ hours">8+ hours</option>
-                                        </select>
                                     </div>
 
                                     <button
@@ -297,9 +350,9 @@ export default function DailyUpdatePage() {
                                         display: 'block',
                                         marginBottom: 'var(--space-1)'
                                     }}>
-                                        Yesterday's Work
+                                        📋 Yesterday's Pending Work
                                     </label>
-                                    <p>{todayUpdate.yesterdayWork}</p>
+                                    <p>{todayUpdate.yesterdayPending || 'No pending work'}</p>
                                 </div>
 
                                 <div style={{ marginBottom: 'var(--space-4)' }}>
@@ -309,9 +362,21 @@ export default function DailyUpdatePage() {
                                         display: 'block',
                                         marginBottom: 'var(--space-1)'
                                     }}>
-                                        Today's Plan
+                                        ✅ Today's Work
                                     </label>
-                                    <p>{todayUpdate.todayPlan}</p>
+                                    <p>{todayUpdate.todayWork}</p>
+                                </div>
+
+                                <div style={{ marginBottom: 'var(--space-4)' }}>
+                                    <label style={{
+                                        fontSize: 'var(--text-sm)',
+                                        color: 'var(--text-secondary)',
+                                        display: 'block',
+                                        marginBottom: 'var(--space-1)'
+                                    }}>
+                                        🎯 Tomorrow's Plan
+                                    </label>
+                                    <p>{todayUpdate.tomorrowPlan}</p>
                                 </div>
 
                                 {todayUpdate.blockers && (
@@ -322,9 +387,9 @@ export default function DailyUpdatePage() {
                                             display: 'block',
                                             marginBottom: 'var(--space-1)'
                                         }}>
-                                            Blockers
+                                            ⚠️ Blockers
                                         </label>
-                                        <p>{todayUpdate.blockers}</p>
+                                        <p style={{ color: 'var(--warning)' }}>{todayUpdate.blockers}</p>
                                     </div>
                                 )}
 
