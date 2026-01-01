@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 
 const DataContext = createContext(null);
@@ -403,8 +403,8 @@ export function DataProvider({ children }) {
         return newTeam;
     };
 
-    // Get dashboard stats
-    const getDashboardStats = () => {
+    // Get dashboard stats - memoized to prevent re-renders
+    const getDashboardStats = useCallback(() => {
         const today = new Date().toISOString().split('T')[0];
 
         const todayAttendance = attendance.filter(a =>
@@ -415,24 +415,39 @@ export function DataProvider({ children }) {
             u.date === today && u.employeeId === user?.id
         );
 
-        const pendingLeaves = leaveRequests.filter(l =>
+        const pendingLeavesCount = leaveRequests.filter(l =>
             l.status === 'pending' && l.employeeId === user?.id
-        );
+        ).length;
 
-        const upcomingMeetings = meetings.filter(m =>
+        const upcomingMeetingsCount = meetings.filter(m =>
             m.date >= today && m.attendees?.includes(user?.id)
-        );
+        ).length;
 
-        const learningStreak = calculateLearningStreak();
+        // Calculate learning streak inline
+        const userLearning = learning.filter(l => l.employeeId === user?.id);
+        let learningStreak = 0;
+        if (userLearning.length > 0) {
+            const sortedDates = [...new Set(userLearning.map(l => l.date))].sort().reverse();
+            let checkDate = new Date();
+            for (const date of sortedDates) {
+                const dateStr = checkDate.toISOString().split('T')[0];
+                if (date === dateStr) {
+                    learningStreak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+        }
 
         return {
             attendanceMarked: todayAttendance.length > 0 && todayAttendance[0].status === 'present',
             updateSubmitted: !!todayUpdate,
-            pendingLeaves: pendingLeaves.length,
-            upcomingMeetings: upcomingMeetings.length,
+            pendingLeaves: pendingLeavesCount,
+            upcomingMeetings: upcomingMeetingsCount,
             learningStreak
         };
-    };
+    }, [user?.id, attendance, workUpdates, leaveRequests, meetings, learning]);
 
     const calculateLearningStreak = () => {
         const userLearning = learning.filter(l => l.employeeId === user?.id);

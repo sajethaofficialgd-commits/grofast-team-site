@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -24,17 +24,17 @@ export default function DashboardPage() {
     const { user, getRoleLabel } = useAuth();
     const { getDashboardStats, attendance, leaveRequests, workUpdates, meetings, appointments } = useData();
     const navigate = useNavigate();
-    const [stats, setStats] = useState(null);
-    const [greeting, setGreeting] = useState('');
 
-    useEffect(() => {
+    // Calculate greeting based on time - only once
+    const greeting = useMemo(() => {
         const hour = new Date().getHours();
-        if (hour < 12) setGreeting('Good Morning');
-        else if (hour < 17) setGreeting('Good Afternoon');
-        else setGreeting('Good Evening');
+        if (hour < 12) return 'Good Morning';
+        if (hour < 17) return 'Good Afternoon';
+        return 'Good Evening';
+    }, []);
 
-        setStats(getDashboardStats());
-    }, [getDashboardStats]);
+    // Get stats - memoized
+    const stats = useMemo(() => getDashboardStats(), [getDashboardStats]);
 
     const today = new Date().toISOString().split('T')[0];
 
