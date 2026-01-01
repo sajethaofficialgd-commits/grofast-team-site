@@ -144,7 +144,7 @@ export default function AttendancePage() {
     };
 
     // Get location
-    // Get location with better error handling
+    // Get location with better error handling - English only, high accuracy
     const getLocation = () => {
         if (!navigator.geolocation) {
             setLocationError('Geolocation is not supported by your browser. You can proceed without location.');
@@ -157,18 +157,40 @@ export default function AttendancePage() {
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
-                const { latitude, longitude } = position.coords;
-                setLocation({ latitude, longitude });
+                const { latitude, longitude, accuracy } = position.coords;
+                setLocation({ latitude, longitude, accuracy });
 
-                // Reverse geocode to get address
+                // Reverse geocode to get address in ENGLISH ONLY
                 try {
                     const response = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=en&addressdetails=1&zoom=18`
                     );
                     const data = await response.json();
-                    setAddress(data.display_name || 'Location detected');
+
+                    // Build precise address with exact details
+                    const addr = data.address || {};
+                    const parts = [];
+
+                    // Add specific location details (most precise to least)
+                    if (addr.house_number) parts.push(addr.house_number);
+                    if (addr.road || addr.street) parts.push(addr.road || addr.street);
+                    if (addr.neighbourhood || addr.suburb) parts.push(addr.neighbourhood || addr.suburb);
+                    if (addr.village || addr.town || addr.city) parts.push(addr.village || addr.town || addr.city);
+                    if (addr.state_district || addr.county) parts.push(addr.state_district || addr.county);
+                    if (addr.state) parts.push(addr.state);
+                    if (addr.postcode) parts.push(addr.postcode);
+
+                    // Build the address string
+                    let fullAddress = parts.length > 0 ? parts.join(', ') : 'Location detected';
+
+                    // Add exact coordinates for verification
+                    const coordString = `📍 ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                    const accuracyString = accuracy ? ` (±${Math.round(accuracy)}m)` : '';
+
+                    setAddress(`${fullAddress} | ${coordString}${accuracyString}`);
                 } catch (e) {
-                    setAddress('Location detected');
+                    // If reverse geocoding fails, show coordinates only
+                    setAddress(`📍 Coordinates: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
                 }
 
                 setIsLoading(false);
@@ -197,9 +219,9 @@ export default function AttendancePage() {
                 setStep('confirm');
             },
             {
-                enableHighAccuracy: false, // Set to false for faster response
-                timeout: 15000, // Increased timeout
-                maximumAge: 60000 // Allow cached position up to 1 minute
+                enableHighAccuracy: true, // Use GPS for precise location
+                timeout: 20000, // Increased timeout for GPS
+                maximumAge: 0 // Always get fresh location, no caching
             }
         );
     };
