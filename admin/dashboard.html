@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Team Management Portal</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/admin-dashboard.css">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar glass-card" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-wrapper">
+                    <div class="logo-icon-small">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <span class="logo-text-small">Admin Panel</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i data-lucide="menu"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-section="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-section="projects">
+                    <i data-lucide="folder-kanban"></i>
+                    <span>Projects</span>
+                </a>
+                <a href="#" class="nav-item" data-section="tasks">
+                    <i data-lucide="list-checks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="#" class="nav-item" data-section="attendance">
+                    <i data-lucide="calendar-check"></i>
+                    <span>Attendance</span>
+                </a>
+                <a href="#" class="nav-item" data-section="time-tracking">
+                    <i data-lucide="timer"></i>
+                    <span>Time Tracking</span>
+                </a>
+                <a href="#" class="nav-item" data-section="team-reports">
+                    <i data-lucide="bar-chart-3"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="#" class="nav-item" data-section="employees">
+                    <i data-lucide="users"></i>
+                    <span>Team</span>
+                </a>
+                <a href="#" class="nav-item" data-section="add-employee">
+                    <i data-lucide="user-plus"></i>
+                    <span>Add Member</span>
+                </a>
+                <a href="#" class="nav-item" data-section="settings">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="logout-btn subtle" onclick="logout()">
+                    <i data-lucide="log-out"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header glass-card">
+                <div class="header-left">
+                    <h1 class="page-title">Admin Dashboard</h1>
+                    <p class="page-subtitle">Welcome back, <span id="adminName">Admin</span>!</p>
+                </div>
+                <div class="header-right">
+                    <div class="header-date">
+                        <i data-lucide="calendar"></i>
+                        <span id="currentDate"></span>
+                    </div>
+                    <div class="admin-avatar">
+                        <i data-lucide="user-circle"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboardSection" class="content-section active">
+                <!-- Row 1: Team Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon blue">
+                            <i data-lucide="users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value" id="totalEmployees">0</h3>
+                            <p class="stat-label">Team Members</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon green">
+                            <i data-lucide="user-check"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value" id="presentToday">0</h3>
+                            <p class="stat-label">Present Today</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon cyan">
+                            <i data-lucide="folder-kanban"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value" id="activeProjects">0</h3>
+                            <p class="stat-label">Active Projects</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon purple">
+                            <i data-lucide="list-checks"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value" id="totalTasks">0</h3>
+                            <p class="stat-label">Total Tasks</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Productivity Stats -->
+                <div class="stats-grid secondary-stats">
+                    <div class="stat-card glass-card compact">
+                        <div class="stat-icon-small green">
+                            <i data-lucide="check-circle-2"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value" id="tasksCompletedToday">0</h3>
+                            <p class="stat-label">Completed Today</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card compact">
+                        <div class="stat-icon-small orange">
+                            <i data-lucide="clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value" id="pendingTasks">0</h3>
+                            <p class="stat-label">Pending Tasks</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card compact">
+                        <div class="stat-icon-small red">
+                            <i data-lucide="alert-triangle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value" id="overdueTasks">0</h3>
+                            <p class="stat-label">Overdue</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card compact">
+                        <div class="stat-icon-small blue">
+                            <i data-lucide="timer"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value" id="totalHoursToday">0h</h3>
+                            <p class="stat-label">Hours Today</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Dashboard Grid -->
+                <div class="dashboard-grid-3">
+                    <!-- Attendance Widget -->
+                    <div class="attendance-widget glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <i data-lucide="calendar-check"></i>
+                                Today's Attendance
+                            </h2>
+                        </div>
+                        <div class="attendance-stats">
+                            <div class="attendance-stat present">
+                                <span class="attendance-count" id="attendancePresent">0</span>
+                                <span class="attendance-label">Present</span>
+                            </div>
+                            <div class="attendance-stat absent">
+                                <span class="attendance-count" id="attendanceAbsent">0</span>
+                                <span class="attendance-label">Absent</span>
+                            </div>
+                            <div class="attendance-stat late">
+                                <span class="attendance-count" id="attendanceLate">0</span>
+                                <span class="attendance-label">Late</span>
+                            </div>
+                            <div class="attendance-stat wfh">
+                                <span class="attendance-count" id="attendanceWfh">0</span>
+                                <span class="attendance-label">WFH</span>
+                            </div>
+                        </div>
+                        <div class="attendance-bar">
+                            <div class="bar-segment present" id="barPresent" style="width: 0%"></div>
+                            <div class="bar-segment absent" id="barAbsent" style="width: 0%"></div>
+                            <div class="bar-segment late" id="barLate" style="width: 0%"></div>
+                            <div class="bar-segment wfh" id="barWfh" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="activity-card glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <i data-lucide="zap"></i>
+                                Live Activity
+                            </h2>
+                        </div>
+                        <div class="activity-list" id="activityList">
+                            <!-- Activity items will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Team Members -->
+                    <div class="employees-preview glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <i data-lucide="users"></i>
+                                Team Status
+                            </h2>
+                            <a href="#" class="view-all-link" onclick="showSection('employees')">View All</a>
+                        </div>
+                        <div class="employees-list" id="employeesPreview">
+                            <!-- Employee items will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Team Reports Section -->
+            <section id="teamReportsSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Team Reports</h2>
+                </div>
+
+                <!-- Employee Selector -->
+                <div class="report-controls glass-card">
+                    <div class="employee-selector">
+                        <label class="selector-label">
+                            <i data-lucide="user"></i>
+                            Select Employee
+                        </label>
+                        <select id="reportEmployeeSelect" class="report-select" onchange="loadEmployeeReport()">
+                            <option value="">-- Select an Employee --</option>
+                        </select>
+                    </div>
+                    <div class="period-tabs" id="reportPeriodTabs">
+                        <button class="period-tab active" data-period="today" onclick="changeReportPeriod('today')">
+                            <i data-lucide="calendar"></i>
+                            Today
+                        </button>
+                        <button class="period-tab" data-period="7days" onclick="changeReportPeriod('7days')">
+                            <i data-lucide="calendar-days"></i>
+                            7 Days
+                        </button>
+                        <button class="period-tab" data-period="30days" onclick="changeReportPeriod('30days')">
+                            <i data-lucide="calendar-range"></i>
+                            30 Days
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Report Content -->
+                <div id="reportContent" class="report-content">
+                    <div class="no-report-selected">
+                        <div class="empty-state-icon">
+                            <i data-lucide="user-search"></i>
+                        </div>
+                        <h3>Select an Employee</h3>
+                        <p>Choose a team member from the dropdown above to view their detailed report</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- All Team Section -->
+            <section id="employeesSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">All Team Members</h2>
+                    <div class="section-actions">
+                        <div class="search-box">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="searchInput" placeholder="Search team..."
+                                oninput="filterEmployees()">
+                        </div>
+                        <button class="btn btn-primary" onclick="showSection('add-employee')">
+                            <i data-lucide="user-plus"></i>
+                            <span>Add Member</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="employees-table-wrapper glass-card">
+                    <table class="employees-table">
+                        <thead>
+                            <tr>
+                                <th>Team Member</th>
+                                <th>Department</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesTableBody">
+                            <!-- Table rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Recent Updates Section -->
+            <section id="updatesSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Recent Updates</h2>
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-filter="all">All</button>
+                        <button class="filter-tab" data-filter="profile">Profile</button>
+                        <button class="filter-tab" data-filter="login">Login</button>
+                    </div>
+                </div>
+
+                <div class="updates-timeline" id="updatesTimeline">
+                    <!-- Updates will be inserted here -->
+                </div>
+            </section>
+
+            <!-- Add Member Section -->
+            <section id="addEmployeeSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Add New Team Member</h2>
+                </div>
+
+                <div class="add-employee-form glass-card">
+                    <form id="addEmployeeForm">
+                        <!-- Section 1: Personal Info -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i data-lucide="user"></i>
+                                <span>Personal Information</span>
+                            </h3>
+                            <div class="form-grid-3">
+                                <div class="form-group">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" id="empName" class="form-input" placeholder="Enter full name"
+                                        required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Email Address</label>
+                                    <input type="email" id="empEmail" class="form-input"
+                                        placeholder="Enter email address" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Phone Number</label>
+                                    <input type="tel" id="empPhone" class="form-input" placeholder="Enter phone number"
+                                        required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Department</label>
+                                    <select id="empDepartment" class="form-input form-select" required>
+                                        <option value="">Select Department</option>
+                                        <option value="Management & Operations">Management & Operations</option>
+                                        <option value="Client Servicing">Client Servicing</option>
+                                        <option value="Digital Advertising">Digital Advertising (Paid Media)</option>
+                                        <option value="Creative & Design">Creative & Design</option>
+                                        <option value="Content & Script">Content & Script</option>
+                                        <option value="Video Production & Editor">Video Production & Editor</option>
+                                        <option value="AI Automation & Tech">AI Automation & Tech</option>
+                                        <option value="Software & Development">Software & Development</option>
+                                        <option value="Sales & Business Development">Sales & Business Development
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Initial Password</label>
+                                    <input type="text" id="empPassword" class="form-input"
+                                        placeholder="Set default password" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-divider"></div>
+
+                        <!-- Section 2: Roles -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <i data-lucide="shield-check"></i>
+                                <span>Role & Access Assignment</span>
+                            </h3>
+                            <p class="form-section-desc">Select the specific roles and responsibilities this member will
+                                handle within the agency.</p>
+
+                            <div class="roles-checkbox-grid extra-columns" id="rolesCheckboxGrid">
+                                <label class="role-checkbox enhanced">
+                                    <input type="checkbox" name="empRoles" value="video-editor">
+                                    <span class="role-checkbox-mark"></span>
+                                    <i data-lucide="video" class="role-icon"></i>
+                                    <div class="role-info">
+                                        <span class="role-name">Video editor</span>
+                                        <small>Video editing & post-production</small>
+                                    </div>
+                                </label>
+                                <label class="role-checkbox enhanced">
+                                    <input type="checkbox" name="empRoles" value="meta-ads">
+                                    <span class="role-checkbox-mark"></span>
+                                    <i data-lucide="target" class="role-icon"></i>
+                                    <div class="role-info">
+                                        <span class="role-name">Meta ads</span>
+                                        <small>Facebook & Instagram advertising</small>
+                                    </div>
+                                </label>
+                                <label class="role-checkbox enhanced">
+                                    <input type="checkbox" name="empRoles" value="script-writer">
+                                    <span class="role-checkbox-mark"></span>
+                                    <i data-lucide="file-text" class="role-icon"></i>
+                                    <div class="role-info">
+                                        <span class="role-name">Script Writer</span>
+                                        <small>Creative copywriting & scripting</small>
+                                    </div>
+                                </label>
+                                <label class="role-checkbox enhanced">
+                                    <input type="checkbox" name="empRoles" value="ai-automation">
+                                    <span class="role-checkbox-mark"></span>
+                                    <i data-lucide="brain" class="role-icon"></i>
+                                    <div class="role-info">
+                                        <span class="role-name">Ai Automation</span>
+                                        <small>AI workflows & systems</small>
+                                    </div>
+                                </label>
+                                <label class="role-checkbox enhanced">
+                                    <input type="checkbox" name="empRoles" value="creative-design">
+                                    <span class="role-checkbox-mark"></span>
+                                    <i data-lucide="palette" class="role-icon"></i>
+                                    <div class="role-info">
+                                        <span class="role-name">Creative</span>
+                                        <small>Landing page, poster design</small>
+                                    </div>
+                                </label>
+                                <label class="role-checkbox enhanced">
+                                    <input type="checkbox" name="empRoles" value="cameraman">
+                                    <span class="role-checkbox-mark"></span>
+                                    <i data-lucide="camera" class="role-icon"></i>
+                                    <div class="role-info">
+                                        <span class="role-name">cameraman</span>
+                                        <small>Cinematography & photography</small>
+                                    </div>
+                                </label>
+                                <label class="role-checkbox enhanced">
+                                    <input type="checkbox" name="empRoles" value="client-executive">
+                                    <span class="role-checkbox-mark"></span>
+                                    <i data-lucide="user-check" class="role-icon"></i>
+                                    <div class="role-info">
+                                        <span class="role-name">Client Executive</span>
+                                        <small>Account & client management</small>
+                                    </div>
+                                </label>
+                                <label class="role-checkbox enhanced">
+                                    <input type="checkbox" name="empRoles" value="software-management">
+                                    <span class="role-checkbox-mark"></span>
+                                    <i data-lucide="code-2" class="role-icon"></i>
+                                    <div class="role-info">
+                                        <span class="role-name">Software Management</span>
+                                        <small>Platform & tech management</small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="form-actions center-aligned">
+                            <button type="button" class="btn btn-secondary large-btn"
+                                onclick="showSection('employees')">Cancel</button>
+                            <button type="submit" class="btn btn-primary large-btn shadow-btn">
+                                <i data-lucide="user-plus"></i>
+                                <span>Register New Team Member</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Projects Section - Full Management -->
+            <section id="projectsSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Projects</h2>
+                    <div class="section-actions">
+                        <div class="filter-tabs">
+                            <button class="filter-tab active" data-filter="all"
+                                onclick="filterProjects('all')">All</button>
+                            <button class="filter-tab" data-filter="active"
+                                onclick="filterProjects('active')">Active</button>
+                            <button class="filter-tab" data-filter="completed"
+                                onclick="filterProjects('completed')">Completed</button>
+                            <button class="filter-tab" data-filter="on_hold" onclick="filterProjects('on_hold')">On
+                                Hold</button>
+                        </div>
+                        <button class="btn btn-primary" onclick="openProjectModal()">
+                            <i data-lucide="plus"></i>
+                            <span>New Project</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Project Stats -->
+                <div class="project-stats-row">
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value" id="projectsTotal">0</span>
+                        <span class="mini-stat-label">Total</span>
+                    </div>
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value active" id="projectsActive">0</span>
+                        <span class="mini-stat-label">Active</span>
+                    </div>
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value completed" id="projectsCompleted">0</span>
+                        <span class="mini-stat-label">Completed</span>
+                    </div>
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value on-hold" id="projectsOnHold">0</span>
+                        <span class="mini-stat-label">On Hold</span>
+                    </div>
+                </div>
+
+                <!-- Projects Grid -->
+                <div class="projects-grid" id="projectsGrid">
+                    <!-- Projects will be rendered here -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state glass-card" id="projectsEmptyState" style="display: none;">
+                    <div class="empty-state-icon">
+                        <i data-lucide="folder-plus"></i>
+                    </div>
+                    <h3>No Projects Yet</h3>
+                    <p>Create your first project to get started</p>
+                    <button class="btn btn-primary" onclick="openProjectModal()">
+                        <i data-lucide="plus"></i>
+                        Create Project
+                    </button>
+                </div>
+            </section>
+
+            <!-- Add/Edit Project Modal -->
+            <div id="projectModal" class="modal hidden">
+                <div class="modal-backdrop" onclick="closeProjectModal()"></div>
+                <div class="modal-content glass-card modal-lg">
+                    <button class="modal-close" onclick="closeProjectModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                    <h2 class="modal-title" id="projectModalTitle">New Project</h2>
+                    <form id="projectForm" onsubmit="saveProject(event)">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="folder" class="label-icon"></i>
+                                    Project Name *
+                                </label>
+                                <input type="text" id="projectName" class="form-control" required
+                                    placeholder="e.g., Website Redesign">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="building-2" class="label-icon"></i>
+                                    Client Name *
+                                </label>
+                                <input type="text" id="projectClient" class="form-control" required
+                                    placeholder="e.g., ABC Company">
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">
+                                    <i data-lucide="file-text" class="label-icon"></i>
+                                    Description
+                                </label>
+                                <textarea id="projectDescription" class="form-control" rows="3"
+                                    placeholder="Project details..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="calendar" class="label-icon"></i>
+                                    Start Date
+                                </label>
+                                <input type="date" id="projectStartDate" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="calendar-check" class="label-icon"></i>
+                                    Deadline
+                                </label>
+                                <input type="date" id="projectDeadline" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="signal" class="label-icon"></i>
+                                    Status
+                                </label>
+                                <select id="projectStatus" class="form-control">
+                                    <option value="active">Active</option>
+                                    <option value="on_hold">On Hold</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="flag" class="label-icon"></i>
+                                    Priority
+                                </label>
+                                <select id="projectPriority" class="form-control">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">
+                                    <i data-lucide="users" class="label-icon"></i>
+                                    Assign Team Members
+                                </label>
+                                <div class="team-checkboxes" id="projectTeamCheckboxes">
+                                    <!-- Team members will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="projectId" value="">
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary"
+                                onclick="closeProjectModal()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-lucide="save"></i>
+                                <span id="projectSubmitText">Create Project</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- Tasks Section - Kanban Board -->
+            <section id="tasksSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Tasks</h2>
+                    <div class="section-actions">
+                        <select id="taskProjectFilter" class="form-control compact" onchange="filterTasksByProject()">
+                            <option value="all">All Projects</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="openTaskModal()">
+                            <i data-lucide="plus"></i>
+                            <span>New Task</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Kanban Board -->
+                <div class="kanban-board">
+                    <!-- To Do Column -->
+                    <div class="kanban-column" data-status="todo">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <span class="column-dot todo"></span>
+                                To Do
+                            </div>
+                            <span class="kanban-count" id="todoCount">0</span>
+                        </div>
+                        <div class="kanban-tasks" id="todoTasks" ondrop="dropTask(event, 'todo')"
+                            ondragover="allowDrop(event)">
+                            <!-- Tasks will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- In Progress Column -->
+                    <div class="kanban-column" data-status="in_progress">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <span class="column-dot in-progress"></span>
+                                In Progress
+                            </div>
+                            <span class="kanban-count" id="inProgressCount">0</span>
+                        </div>
+                        <div class="kanban-tasks" id="inProgressTasks" ondrop="dropTask(event, 'in_progress')"
+                            ondragover="allowDrop(event)">
+                            <!-- Tasks will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Review Column -->
+                    <div class="kanban-column" data-status="review">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <span class="column-dot review"></span>
+                                Review
+                            </div>
+                            <span class="kanban-count" id="reviewCount">0</span>
+                        </div>
+                        <div class="kanban-tasks" id="reviewTasks" ondrop="dropTask(event, 'review')"
+                            ondragover="allowDrop(event)">
+                            <!-- Tasks will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Completed Column -->
+                    <div class="kanban-column" data-status="completed">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <span class="column-dot completed"></span>
+                                Completed
+                            </div>
+                            <span class="kanban-count" id="completedCount">0</span>
+                        </div>
+                        <div class="kanban-tasks" id="completedTasks" ondrop="dropTask(event, 'completed')"
+                            ondragover="allowDrop(event)">
+                            <!-- Tasks will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Add/Edit Task Modal -->
+            <div id="taskModal" class="modal hidden">
+                <div class="modal-backdrop" onclick="closeTaskModal()"></div>
+                <div class="modal-content glass-card modal-lg">
+                    <button class="modal-close" onclick="closeTaskModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                    <h2 class="modal-title" id="taskModalTitle">New Task</h2>
+                    <form id="taskForm" onsubmit="saveTask(event)">
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label class="form-label">
+                                    <i data-lucide="type" class="label-icon"></i>
+                                    Task Title *
+                                </label>
+                                <input type="text" id="taskTitle" class="form-control" required
+                                    placeholder="e.g., Design homepage banner">
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">
+                                    <i data-lucide="file-text" class="label-icon"></i>
+                                    Description
+                                </label>
+                                <textarea id="taskDescription" class="form-control" rows="3"
+                                    placeholder="Task details..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="folder" class="label-icon"></i>
+                                    Project
+                                </label>
+                                <select id="taskProject" class="form-control">
+                                    <option value="">No Project</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="user" class="label-icon"></i>
+                                    Assign To
+                                </label>
+                                <select id="taskAssignee" class="form-control">
+                                    <option value="">Unassigned</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="calendar" class="label-icon"></i>
+                                    Due Date
+                                </label>
+                                <input type="date" id="taskDueDate" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="flag" class="label-icon"></i>
+                                    Priority
+                                </label>
+                                <select id="taskPriority" class="form-control">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="signal" class="label-icon"></i>
+                                    Status
+                                </label>
+                                <select id="taskStatus" class="form-control">
+                                    <option value="todo">To Do</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="review">Review</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i data-lucide="clock" class="label-icon"></i>
+                                    Estimated Hours
+                                </label>
+                                <input type="number" id="taskEstimatedHours" class="form-control" placeholder="0"
+                                    min="0">
+                            </div>
+                        </div>
+                        <input type="hidden" id="taskId" value="">
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-lucide="save"></i>
+                                <span id="taskSubmitText">Create Task</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- Attendance Section - Full Page -->
+            <section id="attendanceSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Attendance Records</h2>
+                    <div class="section-actions">
+                        <input type="date" id="attendanceDateFilter" class="form-control compact"
+                            onchange="filterAttendance()">
+                        <select id="attendanceEmployeeFilter" class="form-control compact"
+                            onchange="filterAttendance()">
+                            <option value="all">All Employees</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Attendance Stats -->
+                <div class="project-stats-row attendance-stats-row">
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value" id="attTotalRecords">0</span>
+                        <span class="mini-stat-label">Total Records</span>
+                    </div>
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value active" id="attPresentCount">0</span>
+                        <span class="mini-stat-label">Present</span>
+                    </div>
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value on-hold" id="attLateCount">0</span>
+                        <span class="mini-stat-label">Late</span>
+                    </div>
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value" id="attOnTimeCount">0</span>
+                        <span class="mini-stat-label">On Time</span>
+                    </div>
+                </div>
+
+                <!-- Attendance Table -->
+                <div class="table-container glass-card">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Date</th>
+                                <th>Check-in Time</th>
+                                <th>Location</th>
+                                <th>Photo</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            <!-- Attendance records will be rendered here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state glass-card" id="attendanceEmptyState" style="display: none;">
+                    <div class="empty-state-icon">
+                        <i data-lucide="calendar-x"></i>
+                    </div>
+                    <h3>No Attendance Records</h3>
+                    <p>Attendance records will appear here when employees check in</p>
+                </div>
+            </section>
+
+
+            <!-- Time Tracking Section - Full Page -->
+            <section id="timeTrackingSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Time Tracking</h2>
+                    <div class="section-actions">
+                        <select id="timeTrackingPeriod" class="form-control compact" onchange="renderTimeTracking()">
+                            <option value="today">Today</option>
+                            <option value="week" selected>This Week</option>
+                            <option value="month">This Month</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Time Stats -->
+                <div class="project-stats-row">
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value" id="timeTotalHours">0h</span>
+                        <span class="mini-stat-label">Total Hours</span>
+                    </div>
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value active" id="timeWorkUpdates">0</span>
+                        <span class="mini-stat-label">Work Updates</span>
+                    </div>
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value completed" id="timeEmployeesActive">0</span>
+                        <span class="mini-stat-label">Active Employees</span>
+                    </div>
+                    <div class="mini-stat-card glass-card">
+                        <span class="mini-stat-value" id="timeAvgHours">0h</span>
+                        <span class="mini-stat-label">Avg per Day</span>
+                    </div>
+                </div>
+
+                <!-- Time Entries Table -->
+                <div class="table-container glass-card">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Date</th>
+                                <th>Project/Task</th>
+                                <th>Description</th>
+                                <th>Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody id="timeTrackingTableBody">
+                            <!-- Time entries will be rendered here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state glass-card" id="timeTrackingEmptyState" style="display: none;">
+                    <div class="empty-state-icon">
+                        <i data-lucide="clock"></i>
+                    </div>
+                    <h3>No Time Entries</h3>
+                    <p>Time entries from work updates will appear here</p>
+                </div>
+            </section>
+
+            <!-- Settings Section - Full Page -->
+            <section id="settingsSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Settings</h2>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- Company Settings -->
+                    <div class="settings-card glass-card">
+                        <div class="settings-card-header">
+                            <i data-lucide="building-2"></i>
+                            <h3>Company Settings</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="form-group">
+                                <label class="form-label">Company Name</label>
+                                <input type="text" id="settingsCompanyName" class="form-control"
+                                    value="Grofast Digital">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Company Email</label>
+                                <input type="email" id="settingsCompanyEmail" class="form-control"
+                                    value="admin@grofast.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Work Hours Settings -->
+                    <div class="settings-card glass-card">
+                        <div class="settings-card-header">
+                            <i data-lucide="clock"></i>
+                            <h3>Work Hours</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="form-group">
+                                <label class="form-label">Work Start Time</label>
+                                <input type="time" id="settingsStartTime" class="form-control" value="09:00">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Late Threshold (hour)</label>
+                                <input type="time" id="settingsLateTime" class="form-control" value="10:00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roles Management -->
+                    <div class="settings-card glass-card full-width">
+                        <div class="settings-card-header">
+                            <i data-lucide="badge"></i>
+                            <h3>Company Roles</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="roles-list" id="settingsRolesList">
+                                <!-- Roles will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Management -->
+                    <div class="settings-card glass-card">
+                        <div class="settings-card-header">
+                            <i data-lucide="database"></i>
+                            <h3>Data Management</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <p class="text-muted" style="margin-bottom: var(--space-4);">Export or clear application
+                                data</p>
+                            <div class="btn-group-vertical">
+                                <button class="btn btn-secondary" onclick="exportAllData()">
+                                    <i data-lucide="download"></i>
+                                    Export All Data
+                                </button>
+                                <button class="btn btn-danger" onclick="clearAllData()">
+                                    <i data-lucide="trash-2"></i>
+                                    Clear All Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- About -->
+                    <div class="settings-card glass-card">
+                        <div class="settings-card-header">
+                            <i data-lucide="info"></i>
+                            <h3>About</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <p><strong>Grofast Digital Team Manager</strong></p>
+                            <p class="text-muted">Version 1.0.0</p>
+                            <p class="text-muted" style="margin-top: var(--space-3);">Built for internal team management
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Employee Detail Modal -->
+    <div id="employeeModal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeModal()"></div>
+        <div class="modal-content glass-card">
+            <button class="modal-close" onclick="closeModal()">
+                <i data-lucide="x"></i>
+            </button>
+            <div id="employeeDetails">
+                <!-- Employee details will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Employee Modal -->
+    <div id="editEmployeeModal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeEditModal()"></div>
+        <div class="modal-content glass-card large-modal">
+            <button class="modal-close" onclick="closeEditModal()">
+                <i data-lucide="x"></i>
+            </button>
+            <div class="section-header" style="margin-bottom: var(--space-6);">
+                <h2 class="section-title">Edit Team Member</h2>
+            </div>
+
+            <form id="editEmployeeForm">
+                <input type="hidden" id="editEmpId">
+                <!-- Section 1: Personal Info -->
+                <div class="form-section">
+                    <h3 class="form-section-title">
+                        <i data-lucide="user"></i>
+                        <span>Personal Information</span>
+                    </h3>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" id="editEmpName" class="form-input" placeholder="Enter full name"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" id="editEmpEmail" class="form-input" placeholder="Enter email address"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" id="editEmpPhone" class="form-input" placeholder="Enter phone number"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Department</label>
+                            <select id="editEmpDepartment" class="form-input form-select" required>
+                                <option value="">Select Department</option>
+                                <option value="Management & Operations">Management & Operations</option>
+                                <option value="Client Servicing">Client Servicing</option>
+                                <option value="Digital Advertising">Digital Advertising (Paid Media)</option>
+                                <option value="Creative & Design">Creative & Design</option>
+                                <option value="Content & Script">Content & Script</option>
+                                <option value="Video Production & Editor">Video Production & Editor</option>
+                                <option value="AI Automation & Tech">AI Automation & Tech</option>
+                                <option value="Software & Development">Software & Development</option>
+                                <option value="Sales & Business Development">Sales & Business Development</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select id="editEmpStatus" class="form-input form-select" required>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Update Password (Optional)</label>
+                            <input type="text" id="editEmpPassword" class="form-input"
+                                placeholder="Leave blank to keep current">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-divider"></div>
+
+                <!-- Section 2: Roles -->
+                <div class="form-section">
+                    <h3 class="form-section-title">
+                        <i data-lucide="shield-check"></i>
+                        <span>Role & Access Assignment</span>
+                    </h3>
+
+                    <div class="roles-checkbox-grid extra-columns" id="editRolesCheckboxGrid">
+                        <label class="role-checkbox enhanced">
+                            <input type="checkbox" name="editEmpRoles" value="video-editor">
+                            <span class="role-checkbox-mark"></span>
+                            <i data-lucide="video" class="role-icon"></i>
+                            <div class="role-info">
+                                <span class="role-name">Video editor</span>
+                            </div>
+                        </label>
+                        <label class="role-checkbox enhanced">
+                            <input type="checkbox" name="editEmpRoles" value="meta-ads">
+                            <span class="role-checkbox-mark"></span>
+                            <i data-lucide="target" class="role-icon"></i>
+                            <div class="role-info">
+                                <span class="role-name">Meta ads</span>
+                            </div>
+                        </label>
+                        <label class="role-checkbox enhanced">
+                            <input type="checkbox" name="editEmpRoles" value="script-writer">
+                            <span class="role-checkbox-mark"></span>
+                            <i data-lucide="file-text" class="role-icon"></i>
+                            <div class="role-info">
+                                <span class="role-name">Script Writer</span>
+                            </div>
+                        </label>
+                        <label class="role-checkbox enhanced">
+                            <input type="checkbox" name="editEmpRoles" value="ai-automation">
+                            <span class="role-checkbox-mark"></span>
+                            <i data-lucide="brain" class="role-icon"></i>
+                            <div class="role-info">
+                                <span class="role-name">Ai Automation</span>
+                            </div>
+                        </label>
+                        <label class="role-checkbox enhanced">
+                            <input type="checkbox" name="editEmpRoles" value="creative-design">
+                            <span class="role-checkbox-mark"></span>
+                            <i data-lucide="palette" class="role-icon"></i>
+                            <div class="role-info">
+                                <span class="role-name">Creative</span>
+                            </div>
+                        </label>
+                        <label class="role-checkbox enhanced">
+                            <input type="checkbox" name="editEmpRoles" value="cameraman">
+                            <span class="role-checkbox-mark"></span>
+                            <i data-lucide="camera" class="role-icon"></i>
+                            <div class="role-info">
+                                <span class="role-name">cameraman</span>
+                            </div>
+                        </label>
+                        <label class="role-checkbox enhanced">
+                            <input type="checkbox" name="editEmpRoles" value="client-executive">
+                            <span class="role-checkbox-mark"></span>
+                            <i data-lucide="user-check" class="role-icon"></i>
+                            <div class="role-info">
+                                <span class="role-name">Client Executive</span>
+                            </div>
+                        </label>
+                        <label class="role-checkbox enhanced">
+                            <input type="checkbox" name="editEmpRoles" value="software-management">
+                            <span class="role-checkbox-mark"></span>
+                            <i data-lucide="code-2" class="role-icon"></i>
+                            <div class="role-info">
+                                <span class="role-name">Software Management</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions center-aligned" style="margin-top: var(--space-6);">
+                    <button type="button" class="btn btn-secondary large-btn" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary large-btn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="../js/admin-data.js"></script>
+    <script src="../js/admin-dashboard.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Management Portal | Grofast Digital</title>
+    <meta name="description"
+        content="Comprehensive team management system for Grofast Digital. Manage your team efficiently with our modern portal.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/home.css">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="home-container">
+        <!-- Header -->
+        <header class="home-header">
+            <div class="logo-wrapper">
+                <div class="logo-icon">
+                    <i data-lucide="users" class="logo-lucide"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-title">Grofast Digital</span>
+                    <span class="logo-subtitle">Team Management Portal</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <main class="hero-section">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i data-lucide="sparkles"></i>
+                    <span>Welcome to the Team</span>
+                </div>
+                <h1 class="hero-title">
+                    <span class="title-gradient">Manage Your Team</span>
+                    <span class="title-sub">Efficiently & Beautifully</span>
+                </h1>
+                <p class="hero-description">
+                    Select your role to access the portal. Admins can view and manage all team members,
+                    while team members can manage their own profiles and updates.
+                </p>
+            </div>
+
+            <!-- Role Selection Cards -->
+            <div class="role-cards">
+                <!-- Admin Card -->
+                <div class="role-card admin-card" onclick="selectRole('admin')">
+                    <div class="role-card-glow"></div>
+                    <div class="role-icon-wrapper admin-icon">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <h2 class="role-title">Admin Portal</h2>
+                    <p class="role-description">
+                        Access the complete dashboard. View all team profiles, track updates,
+                        manage team members, and oversee operations.
+                    </p>
+                    <ul class="role-features">
+                        <li><i data-lucide="check-circle"></i> View All Team Members</li>
+                        <li><i data-lucide="check-circle"></i> Track Updates & Activity</li>
+                        <li><i data-lucide="check-circle"></i> Manage Team Members</li>
+                        <li><i data-lucide="check-circle"></i> Analytics Dashboard</li>
+                    </ul>
+                    <button class="role-btn admin-btn">
+                        <span>Enter as Admin</span>
+                        <i data-lucide="arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Team Card -->
+                <div class="role-card employee-card" onclick="selectRole('employee')">
+                    <div class="role-card-glow"></div>
+                    <div class="role-icon-wrapper employee-icon">
+                        <i data-lucide="users"></i>
+                    </div>
+                    <h2 class="role-title">Team Portal</h2>
+                    <p class="role-description">
+                        Access your personal dashboard. Manage your profile, update your information,
+                        and stay connected with the team.
+                    </p>
+                    <ul class="role-features">
+                        <li><i data-lucide="check-circle"></i> Personal Profile</li>
+                        <li><i data-lucide="check-circle"></i> Update Information</li>
+                        <li><i data-lucide="check-circle"></i> View Team Directory</li>
+                        <li><i data-lucide="check-circle"></i> Activity Dashboard</li>
+                    </ul>
+                    <button class="role-btn employee-btn">
+                        <span>Enter as Team</span>
+                        <i data-lucide="arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Decorative Elements -->
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="home-footer">
+            <p>&copy; 2026 Grofast Digital. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Role selection handler
+        function selectRole(role) {
+            if (role === 'admin') {
+                window.location.href = 'admin/login.html';
+            } else {
+                window.location.href = 'employee/login.html';
+            }
+        }
+
+        // Add hover effect sounds (optional)
+        document.querySelectorAll('.role-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-10px) scale(1.02)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+
+</html>

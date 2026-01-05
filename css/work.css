@@ -1,0 +1,472 @@
+/* =============================================
+   WORK PAGE STYLES - FUTURISTIC AI SAAS
+   ============================================= */
+
+.add-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-accent);
+    border-radius: var(--radius-lg);
+    color: var(--bg-dark);
+    box-shadow: var(--shadow-glow);
+    transition: all var(--transition-base);
+    border: 2px solid rgba(0, 212, 255, 0.3);
+}
+
+.add-btn:hover {
+    transform: scale(1.08);
+    box-shadow: var(--shadow-glow-lg);
+}
+
+.add-btn:active {
+    transform: scale(1);
+}
+
+.add-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* Today Summary */
+.today-summary {
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+    text-align: center;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(0, 212, 255, 0.15);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+}
+
+.today-summary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+}
+
+.summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-5);
+}
+
+.summary-header h2 {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.summary-date {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: var(--space-1) var(--space-3);
+    background: rgba(0, 212, 255, 0.1);
+    border-radius: var(--radius-full);
+}
+
+.summary-count {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.count-number {
+    font-size: var(--font-size-5xl);
+    font-weight: 800;
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+}
+
+.count-text {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+/* Work Form Section */
+.work-form-section {
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(0, 212, 255, 0.2);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-glow), var(--shadow-lg);
+    animation: slideUp 0.35s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.work-form-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+}
+
+.form-header h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.close-form-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: var(--radius-lg);
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.close-form-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--accent-red);
+}
+
+.close-form-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+#workForm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+#formFields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.form-group label .required {
+    color: var(--accent-red);
+    margin-left: var(--space-1);
+}
+
+.form-group .form-input,
+.form-group .form-select,
+.form-group .form-textarea {
+    width: 100%;
+    padding: var(--space-4);
+    background: var(--bg-lavender);
+    border: 2px solid rgba(0, 212, 255, 0.15);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    transition: all var(--transition-base);
+}
+
+.form-group .form-textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+.form-group .form-input:focus,
+.form-group .form-select:focus,
+.form-group .form-textarea:focus {
+    border-color: var(--accent-cyan);
+    background: var(--bg-white);
+    box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.12), var(--shadow-md);
+    outline: none;
+}
+
+.form-group .form-input::placeholder,
+.form-group .form-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+/* Work History */
+.work-history {
+    margin-bottom: var(--space-8);
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.work-item {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(0, 212, 255, 0.1);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    transition: all var(--transition-smooth);
+    box-shadow: var(--shadow-sm);
+}
+
+.work-item:hover {
+    border-color: rgba(0, 212, 255, 0.25);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.work-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-4);
+}
+
+.work-item-title {
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+}
+
+.work-item-time {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: var(--space-1) var(--space-2);
+    background: rgba(0, 212, 255, 0.08);
+    border-radius: var(--radius-full);
+}
+
+.work-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.work-item-tag {
+    padding: var(--space-1) var(--space-3);
+    background: linear-gradient(135deg, rgba(26, 79, 208, 0.12), rgba(0, 212, 255, 0.1));
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--primary-600);
+}
+
+.work-item-content {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.work-item-content p {
+    margin-bottom: var(--space-3);
+}
+
+.work-item-content p:last-child {
+    margin-bottom: 0;
+}
+
+.work-item-content strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.no-updates {
+    text-align: center;
+    padding: var(--space-10);
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px dashed rgba(0, 212, 255, 0.2);
+    border-radius: var(--radius-xl);
+}
+
+.no-updates svg {
+    width: 56px;
+    height: 56px;
+    margin-bottom: var(--space-4);
+    opacity: 0.4;
+    color: var(--accent-cyan);
+}
+
+.no-updates p {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+}
+
+/* Date Separator */
+.date-separator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin: var(--space-5) 0;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.date-separator::before,
+.date-separator::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent);
+}
+
+/* =============================================
+   MOBILE RESPONSIVE - WORK
+   ============================================= */
+
+/* Large phones */
+@media (max-width: 480px) {
+    .today-summary {
+        padding: var(--space-5);
+        margin-bottom: var(--space-5);
+    }
+
+    .summary-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+    }
+
+    .summary-header h2 {
+        font-size: var(--font-size-base);
+    }
+
+    .count-number {
+        font-size: var(--font-size-3xl);
+    }
+
+    .work-form-section {
+        padding: var(--space-5);
+        margin-bottom: var(--space-5);
+    }
+
+    .form-header {
+        margin-bottom: var(--space-5);
+    }
+
+    .form-header h2 {
+        font-size: var(--font-size-lg);
+    }
+
+    .close-form-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    #workForm {
+        gap: var(--space-4);
+    }
+
+    #formFields {
+        gap: var(--space-4);
+    }
+
+    .form-group .form-input,
+    .form-group .form-select,
+    .form-group .form-textarea {
+        padding: var(--space-4);
+        font-size: 16px;
+        /* Prevents iOS zoom */
+        min-height: 52px;
+    }
+
+    .form-group .form-textarea {
+        min-height: 100px;
+    }
+
+    /* Work items */
+    .work-item {
+        padding: var(--space-4);
+    }
+
+    .work-item-header {
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    .work-item-title {
+        font-size: var(--font-size-sm);
+    }
+
+    .work-item-meta {
+        gap: var(--space-2);
+    }
+
+    .work-item-tag {
+        font-size: 10px;
+        padding: var(--space-1) var(--space-2);
+    }
+
+    .work-item-content {
+        font-size: var(--font-size-xs);
+    }
+
+    .no-updates {
+        padding: var(--space-8);
+    }
+
+    .no-updates svg {
+        width: 48px;
+        height: 48px;
+    }
+
+    .add-btn {
+        width: 42px;
+        height: 42px;
+    }
+
+    .add-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Small phones */
+@media (max-width: 380px) {
+    .today-summary {
+        padding: var(--space-4);
+    }
+
+    .work-form-section {
+        padding: var(--space-4);
+    }
+
+    .work-item {
+        padding: var(--space-3);
+    }
+
+    .date-separator {
+        margin: var(--space-4) 0;
+        font-size: var(--font-size-xs);
+    }
+}

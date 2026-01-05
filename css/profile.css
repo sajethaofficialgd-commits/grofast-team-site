@@ -1,0 +1,369 @@
+/* =============================================
+   PROFILE PAGE STYLES - FUTURISTIC AI SAAS
+   ============================================= */
+
+.profile-card {
+    text-align: center;
+    padding: var(--space-10) var(--space-6);
+    margin-bottom: var(--space-6);
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(0, 212, 255, 0.15);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+}
+
+.profile-avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-5);
+    font-size: var(--font-size-4xl);
+    font-weight: 800;
+    color: white;
+    box-shadow: var(--shadow-glow-primary), 0 0 40px rgba(26, 79, 208, 0.3);
+    border: 4px solid rgba(0, 212, 255, 0.3);
+    animation: glowPulse 4s ease-in-out infinite;
+}
+
+.profile-name {
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    margin-bottom: var(--space-2);
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.profile-email {
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: var(--space-5);
+}
+
+.profile-badges {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.profile-badge {
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+}
+
+.role-badge {
+    background: linear-gradient(135deg, rgba(26, 79, 208, 0.12), rgba(0, 212, 255, 0.1));
+    color: var(--primary-600);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+}
+
+.role-badge.admin {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 153, 204, 0.1));
+    color: var(--accent-cyan);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    box-shadow: var(--shadow-glow);
+}
+
+.field-badge {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.08));
+    color: var(--accent-green);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Stats Section */
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.stat-item {
+    padding: var(--space-5);
+    text-align: center;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(0, 212, 255, 0.1);
+    border-radius: var(--radius-xl);
+    transition: all var(--transition-smooth);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-item:hover {
+    border-color: rgba(0, 212, 255, 0.25);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-item .stat-value {
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: var(--space-2);
+    display: block;
+}
+
+.stat-item .stat-label {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+/* Menu */
+.profile-menu {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    text-decoration: none;
+    color: inherit;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(0, 212, 255, 0.1);
+    border-radius: var(--radius-xl);
+    transition: all var(--transition-smooth);
+}
+
+.menu-item:hover {
+    border-color: rgba(0, 212, 255, 0.25);
+    background: var(--bg-white);
+    box-shadow: var(--shadow-md);
+    transform: translateX(5px);
+}
+
+.menu-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(26, 79, 208, 0.08));
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: var(--radius-lg);
+    color: var(--primary-500);
+}
+
+.menu-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.menu-icon.admin {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 212, 255, 0.08));
+    border-color: rgba(0, 212, 255, 0.3);
+    color: var(--accent-cyan);
+}
+
+.menu-text {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.menu-arrow {
+    width: 22px;
+    height: 22px;
+    color: var(--text-muted);
+    transition: all var(--transition-base);
+}
+
+.menu-item:hover .menu-arrow {
+    transform: translateX(5px);
+    color: var(--accent-cyan);
+}
+
+/* Logout Button */
+.logout-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    border: 2px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius-xl);
+    color: var(--accent-red);
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    transition: all var(--transition-base);
+    margin-bottom: var(--space-6);
+}
+
+.logout-btn:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.1));
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+    transform: translateY(-2px);
+}
+
+.logout-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* App Version */
+.app-version {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    padding: var(--space-4);
+    background: rgba(0, 212, 255, 0.03);
+    border-radius: var(--radius-lg);
+    border: 1px dashed rgba(0, 212, 255, 0.15);
+}
+
+.app-version p {
+    margin-bottom: var(--space-1);
+}
+
+/* =============================================
+   MOBILE RESPONSIVE - PROFILE
+   ============================================= */
+
+/* Large phones */
+@media (max-width: 480px) {
+    .profile-card {
+        padding: var(--space-8) var(--space-5);
+        margin-bottom: var(--space-5);
+    }
+
+    .profile-avatar {
+        width: 90px;
+        height: 90px;
+        font-size: var(--font-size-3xl);
+        margin-bottom: var(--space-4);
+    }
+
+    .profile-name {
+        font-size: var(--font-size-xl);
+    }
+
+    .profile-email {
+        font-size: var(--font-size-sm);
+        margin-bottom: var(--space-4);
+    }
+
+    .profile-badge {
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--font-size-xs);
+    }
+
+    .profile-stats {
+        gap: var(--space-3);
+        margin-bottom: var(--space-5);
+    }
+
+    .stat-item {
+        padding: var(--space-4);
+    }
+
+    .stat-item .stat-value {
+        font-size: var(--font-size-xl);
+    }
+
+    .profile-menu {
+        margin-bottom: var(--space-5);
+        gap: var(--space-2);
+    }
+
+    .menu-item {
+        padding: var(--space-4);
+        gap: var(--space-3);
+        min-height: 60px;
+    }
+
+    .menu-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .menu-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .menu-text {
+        font-size: var(--font-size-sm);
+    }
+
+    .logout-btn {
+        padding: var(--space-4);
+        margin-bottom: var(--space-5);
+        min-height: 56px;
+    }
+}
+
+/* Small phones */
+@media (max-width: 380px) {
+    .profile-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-align: left;
+    }
+
+    .stat-item .stat-value {
+        margin-bottom: 0;
+    }
+
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        font-size: var(--font-size-2xl);
+    }
+
+    .profile-name {
+        font-size: var(--font-size-lg);
+    }
+
+    .profile-badges {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 320px) {
+    .profile-card {
+        padding: var(--space-5) var(--space-4);
+    }
+
+    .menu-item {
+        padding: var(--space-3);
+    }
+}
