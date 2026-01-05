@@ -82,12 +82,14 @@
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-5);
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(26, 79, 208, 0.15));
-    border: 1px solid rgba(0, 212, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 212, 255, 0.4);
     border-radius: var(--radius-full);
     font-size: var(--font-size-sm);
     font-weight: 600;
-    color: var(--primary-600);
+    color: white;
     margin-bottom: var(--space-6);
 }
 
@@ -105,25 +107,27 @@
     display: block;
     font-size: clamp(2.5rem, 5vw, 4rem);
     font-weight: 800;
-    background: var(--gradient-glow);
+    background: linear-gradient(135deg, #ffffff 0%, #00d4ff 50%, #ffffff 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     line-height: 1.1;
     letter-spacing: -1px;
+    filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.3));
 }
 
 .title-sub {
     display: block;
     font-size: clamp(1.5rem, 3vw, 2.5rem);
     font-weight: 600;
-    color: var(--text-primary);
+    color: white;
     margin-top: var(--space-2);
+    opacity: 0.9;
 }
 
 .hero-description {
     font-size: var(--font-size-lg);
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.8);
     line-height: 1.7;
     max-width: 600px;
     margin: 0 auto;
@@ -235,9 +239,10 @@
 
 .role-description {
     font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    color: var(--gray-800);
     line-height: 1.6;
     margin-bottom: var(--space-5);
+    font-weight: 500;
 }
 
 /* Role Features */
@@ -256,7 +261,8 @@
     gap: var(--space-3);
     padding: var(--space-2) 0;
     font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    color: var(--gray-900);
+    font-weight: 500;
 }
 
 .role-features li i {

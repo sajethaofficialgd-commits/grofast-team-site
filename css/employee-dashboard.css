@@ -907,6 +907,21 @@
     box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
 }
 
+/* Work Mode Toggle */
+.mode-option input:checked+.mode-label {
+    background: var(--gradient-accent);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+.mode-label {
+    color: var(--text-muted);
+}
+
+.mode-option:hover .mode-label {
+    color: var(--text-primary);
+}
+
 .camera-actions {
     display: flex;
     justify-content: center;

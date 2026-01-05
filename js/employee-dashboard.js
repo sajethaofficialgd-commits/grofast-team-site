@@ -272,6 +272,7 @@ function checkTodayAttendance() {
     const cameraSection = document.getElementById('cameraSection');
     const infoDiv = document.getElementById('attendanceInfo');
     const timerDiv = document.getElementById('workTimer');
+    const modeSelection = document.querySelector('.work-mode-selection');
 
     const now = new Date();
     const currentHour = now.getHours();
@@ -285,11 +286,17 @@ function checkTodayAttendance() {
         statusIcon.innerHTML = '<i data-lucide="check-circle"></i>';
         markBtn.style.display = 'none';
         confirmBtn.style.display = 'none';
+        if (modeSelection) modeSelection.style.display = 'none';
         cameraSection.classList.remove('active');
         infoDiv.style.display = 'block';
 
         document.getElementById('checkInTime').textContent = todayRecord.checkInTime || todayRecord.time;
-        document.getElementById('checkInLocation').textContent = todayRecord.location || 'Office';
+
+        let locationDisplay = todayRecord.location || 'Office';
+        if (todayRecord.workMode) {
+            locationDisplay = `${todayRecord.workMode} (${locationDisplay})`;
+        }
+        document.getElementById('checkInLocation').textContent = locationDisplay;
 
         // Show attendance photo if available
         if (todayRecord.photo) {
@@ -349,6 +356,7 @@ function checkTodayAttendance() {
             markBtn.style.display = 'none';
         }
 
+        if (modeSelection) modeSelection.style.display = 'flex';
         checkoutBtn.style.display = 'none';
         timerDiv.style.display = 'none';
         infoDiv.style.display = 'none';
@@ -531,6 +539,8 @@ function confirmAttendance() {
 
     // Get location
     let location = 'Office';
+    const selectedMode = document.querySelector('input[name="workMode"]:checked')?.value || 'Office';
+
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -552,6 +562,7 @@ function confirmAttendance() {
         totalHours: null,
         status: status,
         location: location,
+        workMode: selectedMode,
         photo: capturedPhotoData
     };
 
@@ -728,7 +739,15 @@ function renderAttendanceHistory(filter = 'all') {
                         In: ${record.checkInTime || record.time}
                         ${record.checkOutTime ? ` | Out: ${record.checkOutTime}` : ''}
                     </span>
-                    ${record.totalHours ? `<span class="record-hours">${record.totalHours}</span>` : ''}
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        ${record.workMode ? `
+                            <span style="font-size: 0.7rem; color: var(--accent-cyan); background: rgba(0,212,255,0.1); padding: 2px 6px; border-radius: 4px; display: flex; align-items: center; gap: 4px;">
+                                <i data-lucide="${record.workMode === 'Office' ? 'building-2' : 'home'}" style="width: 10px; height: 10px;"></i>
+                                ${record.workMode}
+                            </span>
+                        ` : ''}
+                        ${record.totalHours ? `<span class="record-hours" style="margin:0;">${record.totalHours}</span>` : ''}
+                    </div>
                 </div>
             </div>
             <span class="record-status ${statusClass}">${statusText}</span>
