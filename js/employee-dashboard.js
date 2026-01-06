@@ -2225,13 +2225,35 @@ async function handleDashboardPhotoUpload(input) {
 }
 
 function displayDashboardPhoto(base64) {
-    const photoEl = document.getElementById('dashboardProfilePhoto');
-    const initialsEl = document.getElementById('avatarInitials');
+    if (!base64) return;
 
-    if (photoEl && base64) {
-        photoEl.src = base64;
-        photoEl.style.display = 'block';
-        if (initialsEl) initialsEl.style.display = 'none';
+    // 1. Profile Page / Main Area components
+    const dashboardPhoto = document.getElementById('dashboardProfilePhoto');
+    const avatarInitials = document.getElementById('avatarInitials');
+    if (dashboardPhoto) {
+        dashboardPhoto.src = base64;
+        dashboardPhoto.style.display = 'block';
+        if (avatarInitials) avatarInitials.style.display = 'none';
+    }
+
+    // 2. Sidebar Avatar
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+    if (sidebarAvatar) {
+        sidebarAvatar.innerHTML = `<img src="${base64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        sidebarAvatar.style.background = 'transparent';
+    }
+
+    // 3. Header Avatar
+    const headerAvatar = document.querySelector('.header-avatar');
+    if (headerAvatar) {
+        headerAvatar.innerHTML = `<img src="${base64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        headerAvatar.style.background = 'transparent';
+    }
+
+    // 4. Profile Section Large Avatar
+    const profileAvatar = document.getElementById('profileAvatar');
+    if (profileAvatar) {
+        profileAvatar.innerHTML = `<img src="${base64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
     }
 }
 
