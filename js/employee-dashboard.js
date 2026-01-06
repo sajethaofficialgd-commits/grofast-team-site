@@ -159,7 +159,8 @@ async function initDashboardSection() {
     // Update stats
     document.getElementById('attendanceCount').textContent = attendance.length;
     document.getElementById('tasksCompleted').textContent = work.filter(w => w.status === 'completed' || w.status === 'active').length;
-    document.getElementById('coursesProgress').textContent = calculateLearningProgress() + '%';
+    const progress = await calculateLearningProgress();
+    document.getElementById('coursesProgress').textContent = progress + '%';
     document.getElementById('unreadMessages').textContent = messages;
     document.getElementById('chatBadge').textContent = messages;
 
@@ -1151,6 +1152,37 @@ function filterWorkHistory() {
     renderWorkHistoryDays();
 }
 
+function populateTimeSelects() {
+    const startH = document.getElementById('slotStartHour');
+    const startM = document.getElementById('slotStartMin');
+    const endH = document.getElementById('slotEndHour');
+    const endM = document.getElementById('slotEndMin');
+
+    if (!startH) return;
+
+    let hOptions = '';
+    for (let i = 0; i < 24; i++) {
+        const displayH = i > 12 ? i - 12 : (i === 0 ? 12 : i);
+        const ampm = i >= 12 ? 'PM' : 'AM';
+        hOptions += `<option value="${i}">${displayH.toString().padStart(2, '0')} ${ampm}</option>`;
+    }
+
+    let mOptions = '';
+    for (let i = 0; i < 60; i += 5) {
+        mOptions += `<option value="${i}">${i.toString().padStart(2, '0')}</option>`;
+    }
+
+    startH.innerHTML = hOptions;
+    endH.innerHTML = hOptions;
+    startM.innerHTML = mOptions;
+    endM.innerHTML = mOptions;
+
+    // Set defaults
+    const now = new Date();
+    startH.value = now.getHours();
+    endH.value = Math.min(now.getHours() + 1, 23);
+}
+
 // View specific day timeline
 async function viewDayTimeline(dateStr) {
     const updates = await getEmployeeWork();
@@ -1185,7 +1217,7 @@ function populateLearningTimeSelects() {
     if (!startH) return;
 
     let hOptions = '';
-    for (let i = 6; i <= 21; i++) {
+    for (let i = 6; i <= 23; i++) {
         const displayH = i > 12 ? i - 12 : (i === 0 ? 12 : i);
         const ampm = i >= 12 ? 'PM' : 'AM';
         hOptions += `<option value="${i}">${displayH.toString().padStart(2, '0')} ${ampm}</option>`;
@@ -1204,7 +1236,7 @@ function populateLearningTimeSelects() {
     // Set defaults
     const now = new Date();
     startH.value = now.getHours();
-    endH.value = Math.min(now.getHours() + 1, 21);
+    endH.value = Math.min(now.getHours() + 1, 23);
 }
 
 async function addManualLearningLog() {
@@ -2156,7 +2188,7 @@ function triggerDashboardPhotoUpload() {
     document.getElementById('dashboardPhotoInput').click();
 }
 
-function handleDashboardPhotoUpload(input) {
+async function handleDashboardPhotoUpload(input) {
     const file = input.files[0];
     if (!file) return;
 
@@ -2171,16 +2203,23 @@ function handleDashboardPhotoUpload(input) {
     }
 
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = async function (e) {
         const base64 = e.target.result;
 
-        // Save to localStorage
-        localStorage.setItem(`profile_photo_${currentEmployee.id}`, base64);
+        // 1. Save to Supabase
+        const result = await updateEmployeeInDB(currentEmployee.id, { profile_photo: base64 });
 
-        // Update display
-        displayDashboardPhoto(base64);
+        if (result) {
+            // 2. Save to localStorage fallback
+            localStorage.setItem(`profile_photo_${currentEmployee.id}`, base64);
+            currentEmployee.profile_photo = base64;
 
-        showToast('Profile photo updated!', 'success');
+            // 3. Update display
+            displayDashboardPhoto(base64);
+            showToast('Profile photo updated!', 'success');
+        } else {
+            showToast('Failed to save photo to database', 'error');
+        }
     };
     reader.readAsDataURL(file);
 }
