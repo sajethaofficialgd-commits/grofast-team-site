@@ -8,12 +8,30 @@ let supabaseClient = null;
 
 // Check if Supabase JS is loaded
 function initSupabase() {
+    const indicator = document.getElementById('dbStatusIndicator');
+    const updateUI = (connected) => {
+        if (!indicator) return;
+        if (connected) {
+            indicator.classList.remove('offline');
+            indicator.classList.add('connected');
+            indicator.querySelector('.db-status-text').textContent = 'Live Cloud';
+            indicator.title = 'Connected to Supabase';
+        } else {
+            indicator.classList.remove('connected');
+            indicator.classList.add('offline');
+            indicator.querySelector('.db-status-text').textContent = 'Local Mode';
+            indicator.title = 'Using local storage (offline)';
+        }
+    };
+
     if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY) {
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log('✅ Supabase connected!');
+        updateUI(true);
         return true;
     }
     console.warn('⚠️ Supabase not available, using localStorage fallback');
+    updateUI(false);
     return false;
 }
 
