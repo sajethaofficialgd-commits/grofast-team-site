@@ -683,15 +683,11 @@ async function confirmAttendance() {
 
     const selectedMode = document.querySelector('input[name="workMode"]:checked')?.value || 'Office';
 
-    // Upload photo to Supabase Storage if possible
+    // Upload photo to Supabase Storage
     let photoUrl = capturedPhotoData;
     try {
-        if (typeof uploadFile === 'function') {
-            const fileName = `attendance_${currentEmployee.id}_${Date.now()}.jpg`;
-            // Convert dataURL to Blob
-            const response = await fetch(capturedPhotoData);
-            const blob = await response.blob();
-            const uploadedUrl = await uploadFile(blob, fileName, 'attendance');
+        if (typeof uploadToSupabase === 'function') {
+            const uploadedUrl = await uploadToSupabase(capturedPhotoData, `attendance_${currentEmployee.id}`, 'photos');
             if (uploadedUrl) photoUrl = uploadedUrl;
         }
     } catch (err) {
@@ -3477,21 +3473,28 @@ async function handleDashboardPhotoUpload(input) {
             const base64 = canvas.toDataURL('image/jpeg', 0.7);
 
             try {
-                // 1. Save to Supabase
-                const result = await updateEmployeeInDB(currentEmployee.id, { profile_photo: base64 });
+                // 1. Upload to Supabase Storage
+                let finalPhotoUrl = base64;
+                if (typeof uploadToSupabase === 'function') {
+                    const uploadedUrl = await uploadToSupabase(base64, `profile_${currentEmployee.id}`, 'photos');
+                    if (uploadedUrl) finalPhotoUrl = uploadedUrl;
+                }
+
+                // 2. Save URL to Supabase Database
+                const result = await updateEmployeeInDB(currentEmployee.id, { profile_photo: finalPhotoUrl });
 
                 if (result) {
-                    // 2. Sync local data
-                    localStorage.setItem(`profile_photo_${currentEmployee.id}`, base64);
-                    currentEmployee.profile_photo = base64;
+                    // 3. Sync local data
+                    localStorage.setItem(`profile_photo_${currentEmployee.id}`, finalPhotoUrl);
+                    currentEmployee.profile_photo = finalPhotoUrl;
 
                     // Update session storage too
                     const sessionData = JSON.parse(sessionStorage.getItem('employeeData') || '{}');
-                    sessionData.profile_photo = base64;
+                    sessionData.profile_photo = finalPhotoUrl;
                     sessionStorage.setItem('employeeData', JSON.stringify(sessionData));
 
-                    // 3. Update display
-                    displayDashboardPhoto(base64);
+                    // 4. Update display
+                    displayDashboardPhoto(finalPhotoUrl);
                     showToast('Profile photo updated!', 'success');
                 } else {
                     console.error('Failed to update DB for photo');

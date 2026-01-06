@@ -35,6 +35,67 @@ function initSupabase() {
     return false;
 }
 
+// Helper: Convert Base64 to Blob
+function base64ToBlob(base64, type = 'image/jpeg') {
+    const byteCharacters = atob(base64.split(',')[1]);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type });
+}
+
+// Upload file to Supabase Storage
+async function uploadToSupabase(base64, path, bucket = 'photos') {
+    if (!supabaseClient || !base64) return null;
+
+    try {
+        const blob = base64ToBlob(base64);
+        const fileName = `${path}_${Date.now()}.jpg`;
+
+        const { data, error } = await supabaseClient
+            .storage
+            .from(bucket)
+            .upload(fileName, blob, {
+                contentType: 'image/jpeg',
+                upsert: true
+            });
+
+        if (error) throw error;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabaseClient
+            .storage
+            .from(bucket)
+            .getPublicUrl(fileName);
+
+        return publicUrl;
+    } catch (err) {
+        console.error('Upload Error:', err);
+        return null;
+    }
+}
+
+// n8n Webhook Helper for Google Sheets backup
+async function callN8NWebhook(type, data) {
+    if (typeof N8N_WEBHOOKS === 'undefined' || !N8N_WEBHOOKS[type] || N8N_WEBHOOKS[type].includes('YOUR_N8N')) {
+        console.info(`ℹ️ skipping n8n ${type} webhook: URL not configured`);
+        return;
+    }
+
+    try {
+        await fetch(N8N_WEBHOOKS[type], {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        console.log(`✅ ${type} data backed up to Google Sheets via n8n`);
+    } catch (err) {
+        console.error(`❌ n8n webhook error for ${type}:`, err);
+    }
+}
+
 // =============================================
 // EMPLOYEES CRUD OPERATIONS
 // =============================================
@@ -257,6 +318,14 @@ async function addAttendanceToDB(attendanceData) {
             .single();
 
         if (error) throw error;
+
+        // Backup to Google Sheets via n8n
+        callN8NWebhook('attendance', {
+            ...attendanceData,
+            db_id: data.id,
+            source: 'dashboard'
+        });
+
         return data;
     } catch (err) {
         console.error('DB Error:', err);
@@ -332,6 +401,14 @@ async function addWorkUpdateToDB(updateData) {
             .single();
 
         if (error) throw error;
+
+        // Backup to Google Sheets via n8n
+        callN8NWebhook('workUpdate', {
+            ...updateData,
+            db_id: data.id,
+            source: 'dashboard'
+        });
+
         return data;
     } catch (err) {
         console.error('DB Error:', err);
@@ -586,6 +663,14 @@ async function addLearningLogToDB(logData) {
             .single();
 
         if (error) throw error;
+
+        // Backup to Google Sheets via n8n
+        callN8NWebhook('learning', {
+            ...logData,
+            db_id: data.id,
+            source: 'dashboard'
+        });
+
         return data;
     } catch (err) {
         console.error('DB Error:', err);
@@ -727,6 +812,10 @@ async function saveEventToDB(event) {
             .single();
 
         if (error) throw error;
+
+        // Backup to Google Sheets
+        callN8NWebhook('event', { ...event, db_id: data.id });
+
         return data;
     } catch (err) {
         console.error('Save Event Error:', err);
@@ -807,6 +896,10 @@ async function saveMoodLogToDB(userId, mood) {
             }]);
 
         if (error) throw error;
+
+        // Backup to Google Sheets
+        callN8NWebhook('mood', { userId, mood, date: new Date().toISOString() });
+
         return true;
     } catch (err) {
         console.error('Save Mood Error:', err);
@@ -861,6 +954,10 @@ async function saveAnnouncementToDB(announcement) {
             .single();
 
         if (error) throw error;
+
+        // Backup to Google Sheets
+        callN8NWebhook('announcement', { ...announcement, db_id: data.id });
+
         return data;
     } catch (err) {
         console.error('Save Announcement Error:', err);

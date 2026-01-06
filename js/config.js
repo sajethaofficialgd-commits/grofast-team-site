@@ -7,6 +7,9 @@ const N8N_WEBHOOKS = {
     attendance: 'YOUR_N8N_ATTENDANCE_WEBHOOK_URL',
     learning: 'YOUR_N8N_LEARNING_WEBHOOK_URL',
     workUpdate: 'YOUR_N8N_WORK_UPDATE_WEBHOOK_URL',
+    event: 'YOUR_N8N_EVENT_WEBHOOK_URL',
+    mood: 'YOUR_N8N_MOOD_WEBHOOK_URL',
+    announcement: 'YOUR_N8N_ANNOUNCEMENT_WEBHOOK_URL',
     onboarding: 'https://n8n.srv1163761.hstgr.cloud/webhook/employee-welcome'
 };
 
