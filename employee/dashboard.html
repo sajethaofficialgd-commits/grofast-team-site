@@ -798,40 +798,133 @@
 
             <!-- Calendar Section -->
             <section id="calendarSection" class="content-section">
-                <div class="calendar-wrapper">
-                    <!-- Calendar Grid -->
-                    <div class="calendar-main glass-card">
-                        <div class="calendar-header">
-                            <button class="cal-nav" onclick="prevMonth()">
-                                <i data-lucide="chevron-left"></i>
+                <!-- Calendar Controls -->
+                <div class="calendar-controls glass-card">
+                    <div class="calendar-control-left">
+                        <div class="view-toggle">
+                            <button class="view-btn active" data-view="month" onclick="setCalendarView('month')">
+                                <i data-lucide="calendar"></i> Month
                             </button>
-                            <h3 id="calendarMonth">January 2026</h3>
-                            <button class="cal-nav" onclick="nextMonth()">
-                                <i data-lucide="chevron-right"></i>
+                            <button class="view-btn" data-view="week" onclick="setCalendarView('week')">
+                                <i data-lucide="calendar-days"></i> Week
+                            </button>
+                            <button class="view-btn" data-view="agenda" onclick="setCalendarView('agenda')">
+                                <i data-lucide="list"></i> Agenda
                             </button>
                         </div>
-                        <div class="calendar-grid">
-                            <div class="cal-day-header">Sun</div>
-                            <div class="cal-day-header">Mon</div>
-                            <div class="cal-day-header">Tue</div>
-                            <div class="cal-day-header">Wed</div>
-                            <div class="cal-day-header">Thu</div>
-                            <div class="cal-day-header">Fri</div>
-                            <div class="cal-day-header">Sat</div>
-                            <div id="calendarDays"></div>
+                    </div>
+                    <div class="calendar-control-center">
+                        <button class="cal-nav-btn" onclick="prevMonth()">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <h2 id="calendarMonth">January 2026</h2>
+                        <button class="cal-nav-btn" onclick="nextMonth()">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                        <button class="today-btn" onclick="goToToday()">Today</button>
+                    </div>
+                    <div class="calendar-control-right">
+                        <select id="eventTypeFilter" class="filter-select" onchange="filterCalendarEvents()">
+                            <option value="all">All Events</option>
+                            <option value="work">🔧 Work</option>
+                            <option value="learning">📖 Learning</option>
+                            <option value="meeting">👥 Meetings</option>
+                            <option value="personal">🎯 Personal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="calendar-wrapper-enhanced">
+                    <!-- Main Calendar Area -->
+                    <div class="calendar-main-enhanced">
+                        <!-- Month View -->
+                        <div id="monthView" class="calendar-view active">
+                            <div class="calendar-main glass-card">
+                                <div class="calendar-grid-enhanced">
+                                    <div class="cal-day-header">Sun</div>
+                                    <div class="cal-day-header">Mon</div>
+                                    <div class="cal-day-header">Tue</div>
+                                    <div class="cal-day-header">Wed</div>
+                                    <div class="cal-day-header">Thu</div>
+                                    <div class="cal-day-header">Fri</div>
+                                    <div class="cal-day-header">Sat</div>
+                                    <div id="calendarDays" class="calendar-days-container"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Week View -->
+                        <div id="weekView" class="calendar-view">
+                            <div class="week-view-container glass-card">
+                                <div class="week-header" id="weekHeader">
+                                    <!-- Week days will be rendered here -->
+                                </div>
+                                <div class="week-grid" id="weekGrid">
+                                    <!-- Time slots will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agenda View -->
+                        <div id="agendaView" class="calendar-view">
+                            <div class="agenda-container glass-card">
+                                <div class="agenda-header">
+                                    <h3><i data-lucide="list-checks"></i> Upcoming Events</h3>
+                                </div>
+                                <div class="agenda-list" id="agendaList">
+                                    <!-- Agenda items will be rendered here -->
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Events Panel -->
-                    <div class="events-panel glass-card">
-                        <div class="card-header">
-                            <h3><i data-lucide="calendar-plus"></i> Events</h3>
-                            <button class="btn btn-sm btn-primary" onclick="showAddEvent()">
-                                <i data-lucide="plus"></i> Add
-                            </button>
+                    <!-- Sidebar -->
+                    <div class="calendar-sidebar">
+                        <!-- Workload Heatmap -->
+                        <div class="workload-heatmap glass-card">
+                            <div class="card-header">
+                                <h3><i data-lucide="flame"></i> Workload Heatmap</h3>
+                            </div>
+                            <div class="heatmap-container" id="workloadHeatmap">
+                                <!-- Heatmap will be rendered here -->
+                            </div>
+                            <div class="heatmap-legend">
+                                <span class="legend-label">Less</span>
+                                <div class="legend-scale">
+                                    <div class="scale-item" style="background: rgba(0, 212, 255, 0.1);"></div>
+                                    <div class="scale-item" style="background: rgba(0, 212, 255, 0.3);"></div>
+                                    <div class="scale-item" style="background: rgba(0, 212, 255, 0.5);"></div>
+                                    <div class="scale-item" style="background: rgba(0, 212, 255, 0.7);"></div>
+                                    <div class="scale-item" style="background: rgba(0, 212, 255, 1);"></div>
+                                </div>
+                                <span class="legend-label">More</span>
+                            </div>
                         </div>
-                        <div class="events-list" id="eventsList">
-                            <!-- Events will be inserted here -->
+
+                        <!-- Events Panel -->
+                        <div class="events-panel glass-card">
+                            <div class="card-header">
+                                <h3><i data-lucide="calendar-plus"></i> Events</h3>
+                                <button class="btn btn-sm btn-primary" onclick="showAddEvent()">
+                                    <i data-lucide="plus"></i> Add
+                                </button>
+                            </div>
+                            <div class="events-list" id="eventsList">
+                                <!-- Events will be inserted here -->
+                            </div>
+                        </div>
+
+                        <!-- Event Type Legend -->
+                        <div class="event-legend glass-card">
+                            <div class="card-header">
+                                <h3><i data-lucide="palette"></i> Event Types</h3>
+                            </div>
+                            <div class="legend-items">
+                                <div class="legend-item"><span class="legend-dot work"></span> Work</div>
+                                <div class="legend-item"><span class="legend-dot learning"></span> Learning</div>
+                                <div class="legend-item"><span class="legend-dot meeting"></span> Meeting</div>
+                                <div class="legend-item"><span class="legend-dot personal"></span> Personal</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1021,6 +1114,15 @@
                         <label class="form-label">Time</label>
                         <input type="time" id="eventTime" class="form-input" required>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Event Type</label>
+                    <select id="eventType" class="form-input">
+                        <option value="personal">🎯 Personal</option>
+                        <option value="work">🔧 Work</option>
+                        <option value="learning">📖 Learning</option>
+                        <option value="meeting">👥 Meeting</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Description</label>

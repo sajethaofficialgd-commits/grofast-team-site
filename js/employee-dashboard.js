@@ -1742,6 +1742,315 @@ function closeEventModal() {
 }
 
 // =============================================
+// ENHANCED CALENDAR FUNCTIONS
+// =============================================
+
+let currentCalendarView = 'month';
+let currentEventFilter = 'all';
+
+function setCalendarView(view) {
+    currentCalendarView = view;
+
+    // Update toggle buttons
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.view === view) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Update views
+    document.querySelectorAll('.calendar-view').forEach(v => {
+        v.classList.remove('active');
+    });
+    document.getElementById(view + 'View')?.classList.add('active');
+
+    // Render the appropriate view
+    if (view === 'month') {
+        renderCalendar();
+    } else if (view === 'week') {
+        renderWeekView();
+    } else if (view === 'agenda') {
+        renderAgendaView();
+    }
+
+    lucide.createIcons();
+}
+
+function goToToday() {
+    currentMonth = new Date().getMonth();
+    currentYear = new Date().getFullYear();
+    renderCalendar();
+    renderWeekView();
+    renderAgendaView();
+    renderWorkloadHeatmap();
+}
+
+function filterCalendarEvents() {
+    currentEventFilter = document.getElementById('eventTypeFilter')?.value || 'all';
+    renderCalendar();
+    renderEvents();
+    renderWeekView();
+    renderAgendaView();
+}
+
+function renderCalendar() {
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const calendarMonth = document.getElementById('calendarMonth');
+    if (calendarMonth) {
+        calendarMonth.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    }
+
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const today = new Date();
+
+    const events = getEmployeeEvents().filter(e => {
+        if (currentEventFilter === 'all') return true;
+        return (e.type || 'personal') === currentEventFilter;
+    });
+
+    const container = document.getElementById('calendarDays');
+    if (!container) return;
+
+    let html = '';
+
+    // Previous month days
+    const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
+    for (let i = firstDay - 1; i >= 0; i--) {
+        html += `<div class="cal-day-enhanced other-month"><span class="day-number">${prevMonthDays - i}</span></div>`;
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(currentYear, currentMonth, day);
+        const dateStr = date.toDateString();
+        const isToday = dateStr === today.toDateString();
+
+        const dayEvents = events.filter(e => new Date(e.date).toDateString() === dateStr);
+        const intensity = Math.min(dayEvents.length, 5);
+
+        let eventDots = '';
+        dayEvents.slice(0, 3).forEach(e => {
+            const type = e.type || 'personal';
+            eventDots += `<div class="event-dot ${type}"></div>`;
+        });
+        if (dayEvents.length > 3) {
+            eventDots += `<div style="font-size: 9px; color: var(--text-muted);">+${dayEvents.length - 3}</div>`;
+        }
+
+        html += `
+            <div class="cal-day-enhanced${isToday ? ' today' : ''}${intensity > 0 ? ' intensity-' + intensity : ''}" 
+                 onclick="selectDate(${day})">
+                <span class="day-number">${day}</span>
+                <div class="day-events">${eventDots}</div>
+            </div>
+        `;
+    }
+
+    // Next month days
+    const totalCells = firstDay + daysInMonth;
+    const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let i = 1; i <= remaining; i++) {
+        html += `<div class="cal-day-enhanced other-month"><span class="day-number">${i}</span></div>`;
+    }
+
+    container.innerHTML = html;
+
+    // Render heatmap
+    renderWorkloadHeatmap();
+}
+
+function renderWeekView() {
+    const weekHeader = document.getElementById('weekHeader');
+    const weekGrid = document.getElementById('weekGrid');
+    if (!weekHeader || !weekGrid) return;
+
+    const events = getEmployeeEvents().filter(e => {
+        if (currentEventFilter === 'all') return true;
+        return (e.type || 'personal') === currentEventFilter;
+    });
+
+    // Get start of current week (Sunday)
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+
+    // Render week header
+    let headerHtml = '<div></div>'; // Empty corner cell
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(startOfWeek);
+        date.setDate(startOfWeek.getDate() + i);
+        const isToday = date.toDateString() === today.toDateString();
+
+        headerHtml += `
+            <div class="week-day-header${isToday ? ' today' : ''}">
+                <div class="day-name">${date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                <div class="day-date">${date.getDate()}</div>
+            </div>
+        `;
+    }
+    weekHeader.innerHTML = headerHtml;
+
+    // Render time slots (9 AM to 6 PM)
+    let gridHtml = '';
+    for (let hour = 9; hour <= 18; hour++) {
+        const timeStr = hour <= 12 ? `${hour} AM` : `${hour - 12} PM`;
+        gridHtml += `<div class="time-label">${timeStr}</div>`;
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(startOfWeek);
+            date.setDate(startOfWeek.getDate() + i);
+            const dateStr = date.toDateString();
+
+            const slotEvents = events.filter(e => {
+                const eventDate = new Date(e.date).toDateString();
+                const eventHour = parseInt((e.time || '09:00').split(':')[0]);
+                return eventDate === dateStr && eventHour === hour;
+            });
+
+            let eventHtml = '';
+            slotEvents.forEach(e => {
+                const type = e.type || 'personal';
+                eventHtml += `<div class="week-event ${type}">${e.title}</div>`;
+            });
+
+            gridHtml += `<div class="week-slot">${eventHtml}</div>`;
+        }
+    }
+    weekGrid.innerHTML = gridHtml;
+}
+
+function renderAgendaView() {
+    const agendaList = document.getElementById('agendaList');
+    if (!agendaList) return;
+
+    const events = getEmployeeEvents()
+        .filter(e => {
+            if (currentEventFilter === 'all') return true;
+            return (e.type || 'personal') === currentEventFilter;
+        })
+        .filter(e => new Date(e.date) >= new Date())
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (events.length === 0) {
+        agendaList.innerHTML = `
+            <div class="empty-state" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <i data-lucide="calendar-x" style="width: 48px; height: 48px; margin-bottom: 16px;"></i>
+                <p>No upcoming events</p>
+            </div>
+        `;
+        lucide.createIcons();
+        return;
+    }
+
+    // Group events by date
+    const grouped = {};
+    events.forEach(e => {
+        const dateKey = new Date(e.date).toDateString();
+        if (!grouped[dateKey]) grouped[dateKey] = [];
+        grouped[dateKey].push(e);
+    });
+
+    let html = '';
+    Object.keys(grouped).slice(0, 14).forEach(dateKey => {
+        const date = new Date(dateKey);
+        const dayEvents = grouped[dateKey];
+
+        html += `
+            <div class="agenda-day">
+                <div class="agenda-day-header">
+                    <span class="agenda-day-date">${date.getDate()}</span>
+                    <span class="agenda-day-name">${date.toLocaleDateString('en-US', { weekday: 'long', month: 'short' })}</span>
+                </div>
+                <div class="agenda-events">
+        `;
+
+        dayEvents.forEach(e => {
+            const type = e.type || 'personal';
+            const typeLabels = { work: 'Work', learning: 'Learning', meeting: 'Meeting', personal: 'Personal' };
+            html += `
+                <div class="agenda-event">
+                    <span class="agenda-event-time">${e.time || 'All Day'}</span>
+                    <span class="agenda-event-title">${e.title}</span>
+                    <span class="agenda-event-type ${type}">${typeLabels[type]}</span>
+                </div>
+            `;
+        });
+
+        html += `</div></div>`;
+    });
+
+    agendaList.innerHTML = html;
+}
+
+function renderWorkloadHeatmap() {
+    const container = document.getElementById('workloadHeatmap');
+    if (!container) return;
+
+    const events = getEmployeeEvents();
+    const today = new Date();
+
+    // Show last 4 weeks
+    let html = '';
+    for (let week = 3; week >= 0; week--) {
+        for (let day = 0; day < 7; day++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - (week * 7) - (6 - day));
+
+            const dateStr = date.toDateString();
+            const dayEvents = events.filter(e => new Date(e.date).toDateString() === dateStr);
+            const intensity = Math.min(dayEvents.length, 4);
+            const opacity = intensity === 0 ? 0.1 : 0.2 + (intensity * 0.2);
+
+            const tooltip = `${date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}: ${dayEvents.length} events`;
+            html += `<div class="heatmap-day" style="background: rgba(0, 212, 255, ${opacity});" data-tooltip="${tooltip}"></div>`;
+        }
+    }
+
+    container.innerHTML = html;
+}
+
+function renderEvents() {
+    const container = document.getElementById('eventsList');
+    if (!container) return;
+
+    const events = getEmployeeEvents()
+        .filter(e => {
+            if (currentEventFilter === 'all') return true;
+            return (e.type || 'personal') === currentEventFilter;
+        })
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (events.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 30px; color: var(--text-muted);">
+                <p>No events yet</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = events.slice(0, 5).map(event => {
+        const type = event.type || 'personal';
+        const typeColors = {
+            work: '#00d4ff',
+            learning: '#10b981',
+            meeting: '#f59e0b',
+            personal: '#8b5cf6'
+        };
+
+        return `
+            <div class="event-item" style="border-left-color: ${typeColors[type]};">
+                <span class="event-date">${new Date(event.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} ${event.time || ''}</span>
+                <h4 class="event-title">${event.title}</h4>
+                <p class="event-desc">${event.description || ''}</p>
+            </div>
+        `;
+    }).join('');
+}
+
+// =============================================
 // CHAT SECTION
 // =============================================
 
@@ -2119,6 +2428,7 @@ function setupFormHandlers() {
                 title: document.getElementById('eventTitle').value,
                 date: document.getElementById('eventDate').value,
                 time: document.getElementById('eventTime').value,
+                type: document.getElementById('eventType')?.value || 'personal',
                 description: document.getElementById('eventDescription').value
             };
 
@@ -2129,8 +2439,13 @@ function setupFormHandlers() {
 
             this.reset();
             if (typeof closeEventModal === 'function') closeEventModal();
+
+            // Refresh all calendar views
             renderCalendar();
             renderEvents();
+            if (typeof renderWeekView === 'function') renderWeekView();
+            if (typeof renderAgendaView === 'function') renderAgendaView();
+            if (typeof renderWorkloadHeatmap === 'function') renderWorkloadHeatmap();
             await initDashboardSection();
 
             showToast('Event added!', 'success');
