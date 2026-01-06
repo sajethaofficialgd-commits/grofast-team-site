@@ -123,6 +123,37 @@ CREATE TABLE IF NOT EXISTS learning_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 10. EVENTS TABLE (Calendar)
+CREATE TABLE IF NOT EXISTS events (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES employees(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    date DATE NOT NULL,
+    time TIME,
+    type VARCHAR(50) DEFAULT 'personal', -- 'work', 'learning', 'meeting', 'personal'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 11. MOOD LOGS TABLE (Pulse Surveys)
+CREATE TABLE IF NOT EXISTS mood_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES employees(id) ON DELETE CASCADE,
+    mood VARCHAR(50) NOT NULL, -- 'great', 'good', 'okay', 'stressed'
+    date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 12. ANNOUNCEMENTS TABLE
+CREATE TABLE IF NOT EXISTS announcements (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    pinned BOOLEAN DEFAULT false,
+    created_by BIGINT REFERENCES employees(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- =============================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =============================================
@@ -174,12 +205,34 @@ CREATE POLICY "Allow public read on learning_logs" ON learning_logs FOR SELECT U
 CREATE POLICY "Allow public insert on learning_logs" ON learning_logs FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public delete on learning_logs" ON learning_logs FOR DELETE USING (true);
 
+-- Enable RLS on new tables
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mood_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
+
+-- Events policies
+CREATE POLICY "Allow public read on events" ON events FOR SELECT USING (true);
+CREATE POLICY "Allow public insert on events" ON events FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update on events" ON events FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete on events" ON events FOR DELETE USING (true);
+
+-- Mood logs policies
+CREATE POLICY "Allow public read on mood_logs" ON mood_logs FOR SELECT USING (true);
+CREATE POLICY "Allow public insert on mood_logs" ON mood_logs FOR INSERT WITH CHECK (true);
+
+-- Announcements policies
+CREATE POLICY "Allow public read on announcements" ON announcements FOR SELECT USING (true);
+CREATE POLICY "Allow public insert on announcements" ON announcements FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update on announcements" ON announcements FOR UPDATE USING (true);
+
 -- =============================================
 -- ENABLE REALTIME
 -- =============================================
 
--- Enable realtime for messages table
+-- Enable realtime for messages and events tables
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE events;
+ALTER PUBLICATION supabase_realtime ADD TABLE announcements;
 
 -- =============================================
 -- INSERT DEFAULT ADMIN/EMPLOYEES

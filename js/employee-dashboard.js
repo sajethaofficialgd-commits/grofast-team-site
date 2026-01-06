@@ -2444,10 +2444,8 @@ function setupFormHandlers() {
                 description: document.getElementById('eventDescription').value
             };
 
-            // For now, save events to localStorage (or implement if common helper exists)
-            const events = await getEmployeeEvents();
-            events.push({ id: Date.now(), ...newEvent });
-            saveEmployeeEvents(events);
+            // Save event to Supabase (with localStorage fallback)
+            await saveNewEvent(newEvent);
 
             this.reset();
             if (typeof closeEventModal === 'function') closeEventModal();
@@ -2516,25 +2514,53 @@ async function getEmployeeCourses() {
 }
 
 async function getEmployeeEvents() {
-    // For now, keep events in localStorage until we add events table to supabase helper
+    // Use Supabase if available, fallback to localStorage
+    if (typeof getEventsFromDB === 'function') {
+        const events = await getEventsFromDB(currentEmployee.id);
+        if (events && events.length > 0) {
+            return events;
+        }
+    }
+
+    // Fallback to localStorage
     const key = `events_${currentEmployee.id}`;
     const stored = localStorage.getItem(key);
     if (stored) return JSON.parse(stored);
 
-    // Default events
+    // Default events for new users
     const today = new Date();
     const defaultEvents = [
-        { id: 1, title: 'Team Meeting', date: today.toISOString().split('T')[0], time: '10:00', description: 'Weekly team sync' },
-        { id: 2, title: 'Project Review', date: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], time: '14:00', description: 'Q1 project review' }
+        { id: 1, user_id: currentEmployee.id, title: 'Team Meeting', date: today.toISOString().split('T')[0], time: '10:00', type: 'meeting', description: 'Weekly team sync' },
+        { id: 2, user_id: currentEmployee.id, title: 'Project Review', date: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], time: '14:00', type: 'work', description: 'Q1 project review' }
     ];
 
+    // Save defaults to localStorage (they'll sync to Supabase on next add)
     localStorage.setItem(key, JSON.stringify(defaultEvents));
     return defaultEvents;
 }
 
-function saveEmployeeEvents(events) {
+async function saveEmployeeEvents(events) {
+    // Save to localStorage as backup
     const key = `events_${currentEmployee.id}`;
     localStorage.setItem(key, JSON.stringify(events));
+}
+
+async function saveNewEvent(eventData) {
+    // Save to Supabase
+    if (typeof saveEventToDB === 'function') {
+        const saved = await saveEventToDB({
+            user_id: currentEmployee.id,
+            ...eventData
+        });
+        if (saved) return saved;
+    }
+
+    // Fallback to localStorage
+    const events = await getEmployeeEvents();
+    eventData.id = Date.now();
+    events.push(eventData);
+    await saveEmployeeEvents(events);
+    return eventData;
 }
 
 async function getChatMessages() {
@@ -3036,12 +3062,25 @@ async function renderBadges() {
     const streakCount = document.getElementById('streakCount');
     if (streakCount) streakCount.textContent = streak;
 }
-
 // =============================================
 // PHASE 5: PULSE SURVEY
 // =============================================
 
-function getMoodHistory() {
+async function getMoodHistory() {
+    // Use Supabase if available
+    if (typeof getMoodLogsFromDB === 'function') {
+        const moods = await getMoodLogsFromDB(currentEmployee.id, 30);
+        if (moods && moods.length > 0) {
+            const moodEmojis = { great: '😊', good: '🙂', okay: '😐', stressed: '😓' };
+            return moods.map(m => ({
+                mood: m.mood,
+                emoji: moodEmojis[m.mood] || '😐',
+                date: m.created_at || m.date
+            }));
+        }
+    }
+
+    // Fallback to localStorage
     try {
         return JSON.parse(localStorage.getItem(`moodHistory_${currentEmployee.id}`) || '[]');
     } catch {
@@ -3049,7 +3088,7 @@ function getMoodHistory() {
     }
 }
 
-function saveMoodHistory(history) {
+function saveMoodHistoryLocal(history) {
     localStorage.setItem(`moodHistory_${currentEmployee.id}`, JSON.stringify(history));
 }
 
@@ -3064,24 +3103,30 @@ async function submitMood(mood) {
         }
     });
 
-    // Save mood
-    const history = getMoodHistory();
+    // Save to Supabase
+    if (typeof saveMoodLogToDB === 'function') {
+        await saveMoodLogToDB(currentEmployee.id, mood);
+    }
+
+    // Also save to localStorage as backup
+    const history = await getMoodHistory();
     history.unshift({
         mood,
         emoji: moodEmojis[mood],
         date: new Date().toISOString()
     });
-    saveMoodHistory(history.slice(0, 30));
+    saveMoodHistoryLocal(history.slice(0, 30));
 
     showToast(`Thanks for sharing! You're feeling ${mood} today.`, 'success');
-    renderMoodHistory();
+    await renderMoodHistory();
 }
 
-function renderMoodHistory() {
+async function renderMoodHistory() {
     const container = document.getElementById('moodHistory');
     if (!container) return;
 
-    const history = getMoodHistory().slice(0, 7);
+    const allHistory = await getMoodHistory();
+    const history = allHistory.slice(0, 7);
 
     if (history.length === 0) {
         container.innerHTML = '<p style="font-size: 12px; color: var(--text-muted); text-align: center;">Share how you feel!</p>';
@@ -3300,39 +3345,47 @@ function downloadFile(content, filename, mimeType) {
 // PHASE 5: ANNOUNCEMENTS
 // =============================================
 
-function getAnnouncements() {
-    // Sample announcements (in real app, fetch from API)
+async function getAnnouncements() {
+    // Use Supabase if available
+    if (typeof getAnnouncementsFromDB === 'function') {
+        const announcements = await getAnnouncementsFromDB();
+        if (announcements && announcements.length > 0) {
+            return announcements;
+        }
+    }
+
+    // Default announcements for demo
     return [
         {
             id: 1,
             title: 'Welcome to the New Dashboard!',
             content: 'Check out the new analytics, leaderboards, and export features.',
-            date: new Date().toISOString(),
+            created_at: new Date().toISOString(),
             pinned: true
         },
         {
             id: 2,
             title: 'Team Meeting This Friday',
             content: 'Weekly sync at 3 PM. Please prepare your updates.',
-            date: new Date(Date.now() - 86400000).toISOString(),
+            created_at: new Date(Date.now() - 86400000).toISOString(),
             pinned: false
         },
         {
             id: 3,
             title: 'New Learning Modules Available',
             content: 'Explore new courses in your learning section.',
-            date: new Date(Date.now() - 172800000).toISOString(),
+            created_at: new Date(Date.now() - 172800000).toISOString(),
             pinned: false
         }
     ];
 }
 
-function renderAnnouncements() {
+async function renderAnnouncements() {
     const container = document.getElementById('announcementsList');
     const badge = document.getElementById('unreadAnnouncements');
     if (!container) return;
 
-    const announcements = getAnnouncements();
+    const announcements = await getAnnouncements();
 
     if (badge) {
         badge.textContent = announcements.filter(a => a.pinned).length;
@@ -3348,7 +3401,7 @@ function renderAnnouncements() {
             <div class="announcement-header">
                 ${a.pinned ? '<i data-lucide="pin" class="announcement-pin" style="width: 14px; height: 14px;"></i>' : ''}
                 <span class="announcement-title">${a.title}</span>
-                <span class="announcement-date">${new Date(a.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
+                <span class="announcement-date">${new Date(a.created_at || a.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
             </div>
             <p class="announcement-content">${a.content}</p>
         </div>
@@ -3361,8 +3414,8 @@ function renderAnnouncements() {
 async function initEngagementFeatures() {
     await renderLeaderboard();
     await renderBadges();
-    renderMoodHistory();
-    renderAnnouncements();
+    await renderMoodHistory();
+    await renderAnnouncements();
 
     // Set default export dates
     const today = new Date().toISOString().split('T')[0];

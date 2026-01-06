@@ -659,6 +659,197 @@ async function validateEmployeeLogin(email, password) {
     return null;
 }
 
+// =============================================
+// EVENTS CRUD OPERATIONS
+// =============================================
+
+async function getEventsFromDB(userId) {
+    if (!supabaseClient) {
+        const key = `events_${userId}`;
+        return JSON.parse(localStorage.getItem(key) || '[]');
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('events')
+            .select('*')
+            .eq('user_id', Number(userId))
+            .order('date', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+    } catch (err) {
+        console.error('Events DB Error:', err);
+        return JSON.parse(localStorage.getItem(`events_${userId}`) || '[]');
+    }
+}
+
+async function saveEventToDB(event) {
+    if (!supabaseClient) {
+        const key = `events_${event.user_id}`;
+        const events = JSON.parse(localStorage.getItem(key) || '[]');
+        event.id = Date.now();
+        events.push(event);
+        localStorage.setItem(key, JSON.stringify(events));
+        return event;
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('events')
+            .insert([{
+                user_id: Number(event.user_id),
+                title: event.title,
+                description: event.description || '',
+                date: event.date,
+                time: event.time || null,
+                type: event.type || 'personal'
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    } catch (err) {
+        console.error('Save Event Error:', err);
+        return null;
+    }
+}
+
+async function deleteEventFromDB(eventId, userId) {
+    if (!supabaseClient) {
+        const key = `events_${userId}`;
+        let events = JSON.parse(localStorage.getItem(key) || '[]');
+        events = events.filter(e => e.id !== eventId);
+        localStorage.setItem(key, JSON.stringify(events));
+        return true;
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('events')
+            .delete()
+            .eq('id', Number(eventId));
+
+        if (error) throw error;
+        return true;
+    } catch (err) {
+        console.error('Delete Event Error:', err);
+        return false;
+    }
+}
+
+// =============================================
+// MOOD LOGS CRUD OPERATIONS
+// =============================================
+
+async function getMoodLogsFromDB(userId, limit = 30) {
+    if (!supabaseClient) {
+        const key = `moodHistory_${userId}`;
+        return JSON.parse(localStorage.getItem(key) || '[]').slice(0, limit);
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('mood_logs')
+            .select('*')
+            .eq('user_id', Number(userId))
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (error) throw error;
+        return data || [];
+    } catch (err) {
+        console.error('Mood Logs DB Error:', err);
+        return JSON.parse(localStorage.getItem(`moodHistory_${userId}`) || '[]');
+    }
+}
+
+async function saveMoodLogToDB(userId, mood) {
+    if (!supabaseClient) {
+        const key = `moodHistory_${userId}`;
+        const history = JSON.parse(localStorage.getItem(key) || '[]');
+        const moodEmojis = { great: '😊', good: '🙂', okay: '😐', stressed: '😓' };
+        history.unshift({
+            mood,
+            emoji: moodEmojis[mood],
+            date: new Date().toISOString()
+        });
+        localStorage.setItem(key, JSON.stringify(history.slice(0, 30)));
+        return true;
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('mood_logs')
+            .insert([{
+                user_id: Number(userId),
+                mood: mood,
+                date: new Date().toISOString().split('T')[0]
+            }]);
+
+        if (error) throw error;
+        return true;
+    } catch (err) {
+        console.error('Save Mood Error:', err);
+        return false;
+    }
+}
+
+// =============================================
+// ANNOUNCEMENTS CRUD OPERATIONS
+// =============================================
+
+async function getAnnouncementsFromDB() {
+    if (!supabaseClient) {
+        return JSON.parse(localStorage.getItem('announcements') || '[]');
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('announcements')
+            .select('*')
+            .order('pinned', { ascending: false })
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    } catch (err) {
+        console.error('Announcements DB Error:', err);
+        return JSON.parse(localStorage.getItem('announcements') || '[]');
+    }
+}
+
+async function saveAnnouncementToDB(announcement) {
+    if (!supabaseClient) {
+        const announcements = JSON.parse(localStorage.getItem('announcements') || '[]');
+        announcement.id = Date.now();
+        announcement.created_at = new Date().toISOString();
+        announcements.unshift(announcement);
+        localStorage.setItem('announcements', JSON.stringify(announcements));
+        return announcement;
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('announcements')
+            .insert([{
+                title: announcement.title,
+                content: announcement.content,
+                pinned: announcement.pinned || false,
+                created_by: announcement.created_by ? Number(announcement.created_by) : null
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    } catch (err) {
+        console.error('Save Announcement Error:', err);
+        return null;
+    }
+}
+
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
     initSupabase();
