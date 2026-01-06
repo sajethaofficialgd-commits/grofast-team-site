@@ -17,24 +17,51 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
-    // Get employee data
-    const employeeId = parseInt(sessionStorage.getItem('employeeId'));
+    // Ensure Supabase is initialized
+    if (typeof initSupabase === 'function') {
+        initSupabase();
+    }
 
-    // Try to get latest data from Supabase
-    if (typeof getEmployeeById === 'function') {
-        const dbEmployee = await getEmployeeById(employeeId);
-        if (dbEmployee) {
-            currentEmployee = dbEmployee;
+    // Get employee data
+    const employeeId = sessionStorage.getItem('employeeId');
+    if (!employeeId) {
+        logout();
+        return;
+    }
+
+    // 1. Try to get latest data from Supabase
+    if (typeof getEmployeeById === 'function' && supabaseClient) {
+        try {
+            const dbEmployee = await getEmployeeById(employeeId);
+            if (dbEmployee) {
+                currentEmployee = dbEmployee;
+                // Update session storage with latest data
+                sessionStorage.setItem('employeeData', JSON.stringify(dbEmployee));
+                console.log('✅ Employee data refreshed from Supabase');
+            }
+        } catch (err) {
+            console.error('Failed to fetch employee from Supabase:', err);
         }
     }
 
-    // Fallback to localStorage if not found/connected
+    // 2. Fallback to sessionStorage if Supabase fetch failed or didn't run
+    if (!currentEmployee && sessionStorage.getItem('employeeData')) {
+        try {
+            currentEmployee = JSON.parse(sessionStorage.getItem('employeeData'));
+            console.log('ℹ️ Using session-stored employee data');
+        } catch (err) {
+            console.error('Failed to parse session employee data');
+        }
+    }
+
+    // 3. Last fallback to localStorage
     if (!currentEmployee) {
         const employees = getEmployees();
-        currentEmployee = employees.find(emp => emp.id === employeeId);
+        currentEmployee = employees.find(emp => emp.id == employeeId);
     }
 
     if (!currentEmployee) {
+        console.error('No employee data found. Logging out.');
         logout();
         return;
     }
@@ -1940,8 +1967,6 @@ function setupFormHandlers() {
             e.preventDefault();
 
             const updatedData = {
-                name: document.getElementById('editName').value,
-                email: document.getElementById('editEmail').value,
                 phone: document.getElementById('editPhone').value,
                 bio: document.getElementById('editBio') ? document.getElementById('editBio').value : currentEmployee.bio
             };
@@ -1950,6 +1975,10 @@ function setupFormHandlers() {
 
             if (result) {
                 currentEmployee = { ...currentEmployee, ...updatedData };
+
+                // Update session storage to persist across refresh
+                sessionStorage.setItem('employeeData', JSON.stringify(currentEmployee));
+
                 addActivity('profile', currentEmployee.name, 'Updated profile information');
                 await initProfileSection();
                 await initDashboard();
