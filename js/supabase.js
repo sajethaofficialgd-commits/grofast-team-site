@@ -88,7 +88,11 @@ async function callN8NWebhook(type, data) {
         await fetch(N8N_WEBHOOKS[type], {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                data_type: type, // Added this field
+                ...data,
+                timestamp: new Date().toISOString()
+            })
         });
         console.log(`✅ ${type} data backed up to Google Sheets via n8n`);
     } catch (err) {

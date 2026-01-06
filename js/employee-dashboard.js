@@ -366,10 +366,8 @@ let capturedPhotoData = null;
 
 // Attendance timing configuration
 const ATTENDANCE_CONFIG = {
-    checkInStart: 6,        // 6:00 AM - Check-in opens
-    checkInOnTime: 10,      // Before 10:00 AM - On-time
-    checkInLate: 10.5,      // 10:00 AM - 10:30 AM - Late window
-    checkInEnd: 10.5,       // 10:30 AM - Check-in closes
+    checkInStart: 0,        // 12:00 AM - Check-in available anytime
+    checkInEnd: 24,         // 12:00 AM next day
     fullDayHours: 8,        // 8 hours for full day
     halfDayHours: 4         // 4 hours for half day
 };
@@ -447,39 +445,12 @@ async function checkTodayAttendance() {
         lucide.createIcons();
     } else {
         // Not checked in yet
-        const currentTime = currentHour + (now.getMinutes() / 60); // e.g., 10:30 = 10.5
-
-        if (currentTime >= ATTENDANCE_CONFIG.checkInStart && currentTime < ATTENDANCE_CONFIG.checkInOnTime) {
-            // On-time window: 6 AM - 10 AM
-            statusIcon.className = 'status-icon pending';
-            statusIcon.innerHTML = '<i data-lucide="clock"></i>';
-            statusText.textContent = 'Check-in available (On-time)';
-            markBtn.style.display = 'inline-flex';
-            markBtn.disabled = false;
-            markBtn.innerHTML = '<i data-lucide="camera"></i> Check-In with Photo';
-        } else if (currentTime >= ATTENDANCE_CONFIG.checkInOnTime && currentTime < ATTENDANCE_CONFIG.checkInLate) {
-            // Late window: 10:00 AM - 10:30 AM
-            statusIcon.className = 'status-icon late';
-            statusIcon.innerHTML = '<i data-lucide="alert-triangle"></i>';
-            statusText.textContent = 'Late check-in (10:00 - 10:30 AM)';
-            markBtn.style.display = 'inline-flex';
-            markBtn.disabled = false;
-            markBtn.innerHTML = '<i data-lucide="camera"></i> Check-In (Late)';
-        } else if (currentHour < ATTENDANCE_CONFIG.checkInStart) {
-            // Too early
-            statusIcon.className = 'status-icon pending';
-            statusIcon.innerHTML = '<i data-lucide="clock"></i>';
-            statusText.textContent = `Check-in opens at ${ATTENDANCE_CONFIG.checkInStart}:00 AM`;
-            markBtn.style.display = 'inline-flex';
-            markBtn.disabled = true;
-            markBtn.innerHTML = '<i data-lucide="lock"></i> Too Early';
-        } else {
-            // Closed: After 10:30 AM
-            statusIcon.className = 'status-icon late';
-            statusIcon.innerHTML = '<i data-lucide="x-circle"></i>';
-            statusText.textContent = 'Check-in closed (after 10:30 AM)';
-            markBtn.style.display = 'none';
-        }
+        statusIcon.className = 'status-icon pending';
+        statusIcon.innerHTML = '<i data-lucide="clock"></i>';
+        statusText.textContent = 'Check-in available';
+        markBtn.style.display = 'inline-flex';
+        markBtn.disabled = false;
+        markBtn.innerHTML = '<i data-lucide="camera"></i> Check-In';
 
         if (modeSelection) modeSelection.style.display = 'flex';
         checkoutBtn.style.display = 'none';
@@ -664,9 +635,6 @@ async function confirmAttendance() {
 
     // Determine status
     let status = 'present';
-    if (currentTime >= ATTENDANCE_CONFIG.checkInOnTime) {
-        status = 'late';
-    }
 
     // Capture location
     let location = 'Office';
@@ -720,7 +688,7 @@ async function confirmAttendance() {
     confirmBtn.disabled = false;
     confirmBtn.innerHTML = originalHtml;
 
-    showToast(`Checked in at ${newRecord.check_in_time}! Work 8 hours for full day.`, 'success');
+    showToast(`Checked in at ${newRecord.check_in_time}! Have a productive day.`, 'success');
 }
 
 // Checkout function
