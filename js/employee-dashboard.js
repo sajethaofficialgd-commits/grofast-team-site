@@ -11,63 +11,53 @@ let selectedChatRecipient = null;
 document.addEventListener('DOMContentLoaded', async function () {
     lucide.createIcons();
 
-    // Check if employee is logged in
-    if (!sessionStorage.getItem('employeeLoggedIn')) {
+    // 1. Check if employee is logged in
+    const employeeId = sessionStorage.getItem('employeeId');
+    if (!sessionStorage.getItem('employeeLoggedIn') || !employeeId) {
         window.location.href = 'login.html';
         return;
     }
 
-    // Ensure Supabase is initialized
-    if (typeof initSupabase === 'function') {
-        initSupabase();
+    // 2. Initialize Supabase
+    if (typeof initSupabase === 'function') initSupabase();
+
+    // 3. First Pass: Initial Render from Session Storage (FAST)
+    const storedData = sessionStorage.getItem('employeeData');
+    if (storedData) {
+        try {
+            currentEmployee = JSON.parse(storedData);
+            console.log('🚀 Initializing from session storage');
+            await initDashboard();
+        } catch (e) {
+            console.error('Failed to parse session data', e);
+        }
     }
 
-    // Get employee data
-    const employeeId = sessionStorage.getItem('employeeId');
-    if (!employeeId) {
-        logout();
-        return;
-    }
-
-    // 1. Try to get latest data from Supabase
-    if (typeof getEmployeeById === 'function' && supabaseClient) {
+    // 4. Second Pass: Sync from Supabase (FRESH)
+    if (typeof getEmployeeById === 'function' && typeof supabaseClient !== 'undefined') {
         try {
             const dbEmployee = await getEmployeeById(employeeId);
             if (dbEmployee) {
                 currentEmployee = dbEmployee;
-                // Update session storage with latest data
                 sessionStorage.setItem('employeeData', JSON.stringify(dbEmployee));
-                console.log('✅ Employee data refreshed from Supabase');
+                console.log('🔄 Dashboard synced with Supabase');
+                await initDashboard();
             }
         } catch (err) {
-            console.error('Failed to fetch employee from Supabase:', err);
+            console.error('Supabase sync failed:', err);
+            // Fallback to local storage if totally offline/erased
+            if (!currentEmployee) {
+                const employees = typeof getEmployees === 'function' ? getEmployees() : [];
+                currentEmployee = employees.find(emp => emp.id == employeeId);
+                if (currentEmployee) await initDashboard();
+            }
         }
-    }
-
-    // 2. Fallback to sessionStorage if Supabase fetch failed or didn't run
-    if (!currentEmployee && sessionStorage.getItem('employeeData')) {
-        try {
-            currentEmployee = JSON.parse(sessionStorage.getItem('employeeData'));
-            console.log('ℹ️ Using session-stored employee data');
-        } catch (err) {
-            console.error('Failed to parse session employee data');
-        }
-    }
-
-    // 3. Last fallback to localStorage
-    if (!currentEmployee) {
-        const employees = getEmployees();
-        currentEmployee = employees.find(emp => emp.id == employeeId);
     }
 
     if (!currentEmployee) {
         console.error('No employee data found. Logging out.');
         logout();
-        return;
     }
-
-    // Initialize dashboard
-    await initDashboard();
 });
 
 // Initialize dashboard
@@ -95,17 +85,25 @@ async function initDashboard() {
     // Setup navigation
     setupNavigation();
 
-    // Initialize all sections
-    await initDashboardSection();
-    await initProfileSection();
-    await initAttendanceSection();
-    await initWorkSection();
-    await initLearningSection();
-    initCalendarSection();
-    initChatSection();
+    // Initialize all sections with independent error handling
+    const initSections = async () => {
+        // Run Profile first as it's the current priority
+        try { await initProfileSection(); } catch (e) { console.error('Profile Section Fail:', e); }
+        try { await initDashboardSection(); } catch (e) { console.error('Dashboard Section Fail:', e); }
+        try { await initAttendanceSection(); } catch (e) { console.error('Attendance Section Fail:', e); }
+        try { await initWorkSection(); } catch (e) { console.error('Work Section Fail:', e); }
+        try { await initLearningSection(); } catch (e) { console.error('Learning Section Fail:', e); }
+        try { initCalendarSection(); } catch (e) { console.error('Calendar Section Fail:', e); }
+        try { initChatSection(); } catch (e) { console.error('Chat Section Fail:', e); }
+    };
 
-    // Setup form handlers
-    setupFormHandlers();
+    await initSections();
+
+    // Setup form handlers (idempotent)
+    if (!window.formHandlersInitialized) {
+        setupFormHandlers();
+        window.formHandlersInitialized = true;
+    }
 
     lucide.createIcons();
 }
@@ -283,8 +281,8 @@ async function initProfileSection() {
     const joinDateEl = document.getElementById('joinDate');
     const departmentEl = document.getElementById('department');
 
-    if (nameEl) nameEl.textContent = currentEmployee.name;
-    if (roleEl) roleEl.textContent = `${currentEmployee.role || currentEmployee.position} • ${currentEmployee.department}`;
+    if (nameEl) nameEl.textContent = currentEmployee.name || 'User';
+    if (roleEl) roleEl.textContent = `${currentEmployee.role || currentEmployee.position || 'Employee'} • ${currentEmployee.department || 'General'}`;
 
     const joinDate = currentEmployee.join_date || currentEmployee.joinDate || currentEmployee.created_at || new Date().toISOString();
     if (joinDateEl) joinDateEl.textContent = new Date(joinDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
@@ -297,13 +295,29 @@ async function initProfileSection() {
     if (bioEl) bioEl.value = currentEmployee.bio || '';
     if (linkedinEl) linkedinEl.value = currentEmployee.linkedin || '';
 
-    document.getElementById('lastActive').textContent = 'Now';
+    const lastActiveEl = document.getElementById('lastActive');
+    if (lastActiveEl) lastActiveEl.textContent = 'Now';
 
     // Handle profile photo
     if (currentEmployee.profile_photo || currentEmployee.photo) {
-        avatarEl.innerHTML = `<img src="${currentEmployee.profile_photo || currentEmployee.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        const photoUrl = currentEmployee.profile_photo || currentEmployee.photo;
+
+        // Update both the large container and the specific img inside it
+        if (avatarEl) {
+            avatarEl.style.background = 'transparent';
+        }
+        const largeImg = document.getElementById('dashboardProfilePhoto');
+        const initialsSpan = document.getElementById('avatarInitials');
+
+        if (largeImg) {
+            largeImg.src = photoUrl;
+            largeImg.style.display = 'block';
+        }
+        if (initialsSpan) {
+            initialsSpan.style.display = 'none';
+        }
     } else {
-        avatarEl.textContent = getInitials(currentEmployee.name);
+        if (avatarEl) avatarEl.textContent = getInitials(currentEmployee.name || 'User');
     }
 
     // Form fields
@@ -312,10 +326,10 @@ async function initProfileSection() {
     const editEmail = document.getElementById('editEmail');
     const editPhone = document.getElementById('editPhone');
 
-    if (editName) editName.value = currentEmployee.name;
-    if (editRole) editRole.value = currentEmployee.role || currentEmployee.position;
-    if (editEmail) editEmail.value = currentEmployee.email;
-    if (editPhone) editPhone.value = currentEmployee.phone;
+    if (editName) editName.value = currentEmployee.name || '';
+    if (editRole) editRole.value = currentEmployee.role || currentEmployee.position || '';
+    if (editEmail) editEmail.value = currentEmployee.email || '';
+    if (editPhone) editPhone.value = currentEmployee.phone || '';
 }
 
 // =============================================
