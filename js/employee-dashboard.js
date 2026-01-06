@@ -62,10 +62,19 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 // Initialize dashboard
 async function initDashboard() {
-    // Set current date
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const dateEl = document.getElementById('currentDate');
-    if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-IN', options);
+    // Set current date and time
+    const updateDateTime = () => {
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+        const now = new Date();
+
+        const dateEl = document.getElementById('currentDate');
+        if (dateEl) {
+            dateEl.textContent = now.toLocaleDateString('en-IN', dateOptions) + ' | ' + now.toLocaleTimeString('en-IN', timeOptions);
+        }
+    };
+    updateDateTime();
+    setInterval(updateDateTime, 60000); // Update every minute
 
     // Update sidebar user info
     const avatarEl = document.getElementById('sidebarAvatar');
@@ -1707,6 +1716,21 @@ function renderEvents() {
 }
 
 function showAddEvent() {
+    const eventDate = document.getElementById('eventDate');
+    const eventTime = document.getElementById('eventTime');
+
+    // Set default values if empty
+    if (!eventDate.value) {
+        eventDate.value = new Date().toISOString().split('T')[0];
+    }
+
+    if (!eventTime.value) {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        eventTime.value = `${hours}:${minutes}`;
+    }
+
     document.getElementById('eventModal').classList.remove('hidden');
 }
 
