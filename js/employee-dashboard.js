@@ -827,11 +827,20 @@ async function renderAttendanceHistory(filter = 'all') {
     let attendance = await getEmployeeAttendance();
 
     if (filter !== 'all') {
-        attendance = attendance.filter(a => new Date(a.date).getMonth() === parseInt(filter));
+        attendance = attendance.filter(a => {
+            const date = new Date(a.date);
+            return !isNaN(date) && date.getMonth() === parseInt(filter);
+        });
     }
 
-    if (attendance.length === 0) {
-        container.innerHTML = '<p class="text-muted text-sm text-center p-4">No attendance records</p>';
+    if (!attendance || attendance.length === 0) {
+        container.innerHTML = `
+            <div class="text-center p-8">
+                <i data-lucide="calendar-x" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 12px; opacity: 0.5;"></i>
+                <p class="text-muted text-sm">No attendance records found for this period.</p>
+            </div>
+        `;
+        lucide.createIcons();
         return;
     }
 

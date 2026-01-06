@@ -274,13 +274,14 @@ async function getAttendanceFromDB(filters = {}) {
         let query = supabaseClient.from('attendance').select('*');
 
         if (filters.userId) {
-            query = query.eq('user_id', filters.userId);
-        }
-        if (filters.date) {
-            query = query.eq('date', filters.date);
+            // Ensure userId is a number for the BIGINT column
+            query = query.eq('user_id', Number(filters.userId));
         }
 
-        const { data, error } = await query.order('created_at', { ascending: false });
+        // Order by date and then time to ensure correct history sequence
+        const { data, error } = await query
+            .order('date', { ascending: false })
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
         return data || [];
