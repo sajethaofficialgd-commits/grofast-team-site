@@ -24,6 +24,12 @@
     background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
 }
 
+.profile-avatar-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-bottom: var(--space-5);
+}
+
 .profile-avatar {
     width: 110px;
     height: 110px;
@@ -32,13 +38,35 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto var(--space-5);
     font-size: var(--font-size-4xl);
     font-weight: 800;
     color: white;
     box-shadow: var(--shadow-glow-primary), 0 0 40px rgba(26, 79, 208, 0.3);
     border: 4px solid rgba(0, 212, 255, 0.3);
     animation: glowPulse 4s ease-in-out infinite;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 50%;
+    color: white;
+}
+
+.profile-avatar:hover .avatar-overlay {
+    opacity: 1;
 }
 
 .profile-name {

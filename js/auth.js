@@ -65,7 +65,16 @@ class AuthManager {
     createSession(user, rememberMe) {
         const duration = rememberMe ? APP_CONFIG.session.rememberMeDuration : APP_CONFIG.session.timeout;
         const sessionData = {
-            user: { id: user.id, email: user.email, name: user.name, role: user.role, field: user.field },
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                field: user.field,
+                position: user.position || '',
+                department: user.department || '',
+                phone: user.phone || ''
+            },
             expiry: Date.now() + duration,
             createdAt: Date.now()
         };

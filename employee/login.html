@@ -15,6 +15,9 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/auth.css">
 </head>
@@ -106,22 +109,18 @@
     <!-- Toast Container -->
     <div id="toastContainer" class="toast-container"></div>
 
+    <script src="../js/config.js"></script>
     <script src="../js/admin-data.js"></script>
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
 
-        // IMPORTANT: Force initialize employee data on page load
-        (function initializeData() {
-            // Always ensure we have employee data
-            const stored = localStorage.getItem('employees');
-            if (!stored || stored === '[]' || stored === 'null') {
-                // Force reset with default employees
-                const defaultEmployees = [];
-                localStorage.setItem('employees', JSON.stringify(defaultEmployees));
-                console.log('Employee data initialized!');
-            }
-        })();
+        // Initialize Supabase client
+        let supabaseClient = null;
+        if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase connected!');
+        }
 
         // Toggle password visibility
         function togglePassword() {
@@ -139,19 +138,76 @@
         }
 
         // Form submission
-        document.getElementById('employeeLoginForm').addEventListener('submit', function (e) {
+        document.getElementById('employeeLoginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
             const errorMessage = document.getElementById('errorMessage');
+            const submitBtn = this.querySelector('button[type="submit"]');
 
-            // Get employees and validate
-            const employees = getEmployees();
-            const employee = employees.find(emp =>
-                emp.email.toLowerCase() === email.toLowerCase() &&
-                emp.password === password
-            );
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> <span>Signing in...</span>';
+            lucide.createIcons();
+
+            let employee = null;
+
+            // 1. First check Supabase database
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('employees')
+                        .select('*')
+                        .ilike('email', email)
+                        .eq('password', password)
+                        .single();
+
+                    if (data && !error) {
+                        employee = data;
+                        console.log('✅ Found employee in database');
+                    }
+                } catch (err) {
+                    console.log('Database check:', err.message);
+                }
+            }
+
+            // 2. If not found in database, check DEMO_USERS from config.js
+            if (!employee && typeof DEMO_USERS !== 'undefined') {
+                const demoUser = DEMO_USERS.find(user =>
+                    user.email.toLowerCase() === email.toLowerCase() &&
+                    user.password === password &&
+                    user.role !== 'admin'
+                );
+                if (demoUser) {
+                    employee = {
+                        id: demoUser.id,
+                        name: demoUser.name,
+                        email: demoUser.email,
+                        role: demoUser.role,
+                        position: demoUser.position,
+                        department: demoUser.department,
+                        phone: demoUser.phone,
+                        status: 'active'
+                    };
+                    console.log('✅ Found employee in DEMO_USERS');
+                }
+            }
+
+            // 3. Fallback to localStorage
+            if (!employee) {
+                const employees = getEmployees();
+                employee = employees.find(emp =>
+                    emp.email.toLowerCase() === email.toLowerCase() &&
+                    emp.password === password
+                );
+                if (employee) console.log('✅ Found employee in localStorage');
+            }
+
+            // Reset button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i data-lucide="log-in"></i> <span>Sign In</span>';
+            lucide.createIcons();
 
             if (employee) {
                 // Check if account is active
@@ -161,10 +217,6 @@
                     return;
                 }
 
-                // Update last login
-                employee.lastLogin = new Date().toISOString();
-                saveEmployees(employees);
-
                 // Add activity log
                 addActivity('login', employee.name, 'Logged into the system');
 
@@ -172,8 +224,9 @@
                 sessionStorage.setItem('employeeLoggedIn', 'true');
                 sessionStorage.setItem('employeeId', employee.id);
                 sessionStorage.setItem('employeeName', employee.name);
+                sessionStorage.setItem('employeeData', JSON.stringify(employee));
 
-                // Redirect to profile
+                // Redirect to dashboard
                 showToast('Login successful!', 'success');
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
@@ -230,6 +283,20 @@
             font-size: var(--font-size-xs);
             color: var(--text-muted);
             font-family: monospace;
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </body>

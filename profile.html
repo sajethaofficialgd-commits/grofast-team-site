@@ -63,14 +63,64 @@
 
         <!-- Profile Card -->
         <section class="profile-card glass-card">
-            <div class="profile-avatar" id="profileAvatar">
-                <span id="avatarInitials">GD</span>
+            <div class="profile-avatar-wrapper">
+                <div class="profile-avatar" id="profileAvatar" onclick="triggerPhotoUpload()">
+                    <span id="avatarInitials">GD</span>
+                    <img id="profilePhoto" src="" alt=""
+                        style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    <div class="avatar-overlay">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 24px; height: 24px;">
+                            <path
+                                d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                            <circle cx="12" cy="13" r="4" />
+                        </svg>
+                    </div>
+                </div>
+                <input type="file" id="photoInput" accept="image/*" style="display: none;"
+                    onchange="handlePhotoUpload(this)">
             </div>
             <h2 class="profile-name" id="profileName">User Name</h2>
+            <p class="profile-position" id="profilePosition"
+                style="color: var(--grofast-cyan); font-size: 14px; margin: 4px 0;">Position</p>
             <p class="profile-email" id="profileEmail">user@grofast.com</p>
             <div class="profile-badges">
                 <span class="profile-badge role-badge" id="roleBadge">Employee</span>
                 <span class="profile-badge field-badge" id="fieldBadge">Field</span>
+            </div>
+
+            <!-- Contact Details -->
+            <div class="contact-details"
+                style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); width: 100%;">
+                <div class="contact-item" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <div
+                        style="width: 36px; height: 36px; border-radius: 50%; background: rgba(0, 212, 255, 0.15); display: flex; align-items: center; justify-content: center;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--grofast-cyan)" stroke-width="2"
+                            style="width: 18px; height: 18px;">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                            <polyline points="22,6 12,13 2,6" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Email</div>
+                        <div id="contactEmail" style="font-size: 14px; color: var(--text-primary);">user@grofast.com
+                        </div>
+                    </div>
+                </div>
+                <div class="contact-item" style="display: flex; align-items: center; gap: 12px;">
+                    <div
+                        style="width: 36px; height: 36px; border-radius: 50%; background: rgba(0, 212, 255, 0.15); display: flex; align-items: center; justify-content: center;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--grofast-cyan)" stroke-width="2"
+                            style="width: 18px; height: 18px;">
+                            <path
+                                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Phone</div>
+                        <div id="contactPhone" style="font-size: 14px; color: var(--text-primary);">Not provided</div>
+                    </div>
+                </div>
             </div>
         </section>
 

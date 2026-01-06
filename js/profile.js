@@ -12,9 +12,25 @@ function initProfile(user) {
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
     document.getElementById('avatarInitials').textContent = initials;
 
+    // Load saved profile photo if exists
+    loadProfilePhoto(user.id);
+
     // Set user info
     document.getElementById('profileName').textContent = user.name;
     document.getElementById('profileEmail').textContent = user.email;
+
+    // Set position
+    const positionEl = document.getElementById('profilePosition');
+    if (positionEl) {
+        positionEl.textContent = user.position || user.department || user.field || 'Team Member';
+    }
+
+    // Set contact details
+    const contactEmail = document.getElementById('contactEmail');
+    if (contactEmail) contactEmail.textContent = user.email || 'Not provided';
+
+    const contactPhone = document.getElementById('contactPhone');
+    if (contactPhone) contactPhone.textContent = user.phone || 'Not provided';
 
     // Set role badge
     const roleBadge = document.getElementById('roleBadge');
@@ -41,6 +57,61 @@ function initProfile(user) {
 
     // Logout handler
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+}
+
+// Profile Photo Functions
+function triggerPhotoUpload() {
+    document.getElementById('photoInput').click();
+}
+
+function handlePhotoUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        toast.error('Photo must be less than 2MB');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const base64 = e.target.result;
+        const user = auth.getCurrentUser();
+
+        // Save to localStorage
+        localStorage.setItem(`profile_photo_${user.id}`, base64);
+
+        // Display photo
+        displayProfilePhoto(base64);
+
+        toast.success('Profile photo updated!');
+    };
+    reader.readAsDataURL(file);
+}
+
+function loadProfilePhoto(userId) {
+    const savedPhoto = localStorage.getItem(`profile_photo_${userId}`);
+    if (savedPhoto) {
+        displayProfilePhoto(savedPhoto);
+    }
+}
+
+function displayProfilePhoto(base64) {
+    const photoEl = document.getElementById('profilePhoto');
+    const initialsEl = document.getElementById('avatarInitials');
+
+    if (photoEl && base64) {
+        photoEl.src = base64;
+        photoEl.style.display = 'block';
+        if (initialsEl) initialsEl.style.display = 'none';
+    }
 }
 
 function loadProfileStats(user) {

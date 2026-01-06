@@ -1,7 +1,7 @@
 // Grofast Digital - Configuration
 
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://poatldvuvyhteenqrpka.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_DzWwUSNQKy-Ufen14qNxmw_ja24p1TA';
 
 const N8N_WEBHOOKS = {
     attendance: 'YOUR_N8N_ATTENDANCE_WEBHOOK_URL',
@@ -28,4 +28,70 @@ const FIELDS = {
     DIGITAL_MARKETING: { id: 'digital_marketing', name: 'Digital Marketing', icon: '📢', color: '#10b981' }
 };
 
-const DEMO_USERS = [];
+const DEMO_USERS = [
+    {
+        id: 1,
+        email: 'grofastdigital@gmail.com',
+        password: 'Grofast@123',
+        name: 'Grofast Admin',
+        role: 'admin',
+        field: 'all',
+        position: 'CEO & Founder',
+        department: 'Management',
+        phone: '+91 98765 43210'
+    },
+    {
+        id: 2,
+        email: 'sajeth@grofast.com',
+        password: 'password123',
+        name: 'Sajeth Official',
+        role: 'employee',
+        field: 'digital_marketing',
+        position: 'Digital Marketing Lead',
+        department: 'Marketing',
+        phone: '+91 98765 12345'
+    },
+    {
+        id: 3,
+        email: 'rahul@grofast.com',
+        password: 'password123',
+        name: 'Rahul Team',
+        role: 'employee',
+        field: 'video_editor',
+        position: 'Senior Video Editor',
+        department: 'Creative',
+        phone: '+91 87654 32109'
+    },
+    {
+        id: 4,
+        email: 'priya@grofast.com',
+        password: 'password123',
+        name: 'Priya Sharma',
+        role: 'senior',
+        field: 'gen_ai',
+        position: 'AI Solutions Architect',
+        department: 'Technology',
+        phone: '+91 76543 21098'
+    },
+    {
+        id: 5,
+        email: 'sajeethasiva6@gmail.com',
+        password: 'Sara@1545',
+        name: 'Naveena',
+        role: 'employee',
+        field: 'digital_marketing',
+        position: 'Team Member',
+        department: 'Marketing',
+        phone: ''
+    }
+];
+
+// Helper function to get field info
+function getFieldInfo(fieldId) {
+    for (const key in FIELDS) {
+        if (FIELDS[key].id === fieldId) {
+            return FIELDS[key];
+        }
+    }
+    return null;
+}

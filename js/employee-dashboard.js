@@ -8,7 +8,7 @@ let currentYear = new Date().getFullYear();
 let selectedChatRecipient = null;
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
     lucide.createIcons();
 
     // Check if employee is logged in
@@ -19,8 +19,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Get employee data
     const employeeId = parseInt(sessionStorage.getItem('employeeId'));
-    const employees = getEmployees();
-    currentEmployee = employees.find(emp => emp.id === employeeId);
+
+    // Try to get latest data from Supabase
+    if (typeof getEmployeeById === 'function') {
+        const dbEmployee = await getEmployeeById(employeeId);
+        if (dbEmployee) {
+            currentEmployee = dbEmployee;
+        }
+    }
+
+    // Fallback to localStorage if not found/connected
+    if (!currentEmployee) {
+        const employees = getEmployees();
+        currentEmployee = employees.find(emp => emp.id === employeeId);
+    }
 
     if (!currentEmployee) {
         logout();
@@ -28,29 +40,40 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Initialize dashboard
-    initDashboard();
+    await initDashboard();
 });
 
 // Initialize dashboard
-function initDashboard() {
+async function initDashboard() {
     // Set current date
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-IN', options);
+    const dateEl = document.getElementById('currentDate');
+    if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-IN', options);
 
     // Update sidebar user info
-    document.getElementById('sidebarAvatar').textContent = getInitials(currentEmployee.name);
-    document.getElementById('sidebarName').textContent = currentEmployee.name;
-    document.getElementById('sidebarRole').textContent = currentEmployee.role;
+    const avatarEl = document.getElementById('sidebarAvatar');
+    const nameEl = document.getElementById('sidebarName');
+    const roleEl = document.getElementById('sidebarRole');
+
+    if (avatarEl) avatarEl.textContent = getInitials(currentEmployee.name);
+    if (nameEl) nameEl.textContent = currentEmployee.name;
+    if (roleEl) roleEl.textContent = currentEmployee.role || currentEmployee.position;
+
+    // Handle profile photo for sidebar if it exists
+    if (currentEmployee.profile_photo || currentEmployee.photo) {
+        const sidebarAvatarContainer = avatarEl.parentElement;
+        sidebarAvatarContainer.innerHTML = `<img src="${currentEmployee.profile_photo || currentEmployee.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+    }
 
     // Setup navigation
     setupNavigation();
 
     // Initialize all sections
-    initDashboardSection();
-    initProfileSection();
-    initAttendanceSection();
-    initWorkSection();
-    initLearningSection();
+    await initDashboardSection();
+    await initProfileSection();
+    await initAttendanceSection();
+    await initWorkSection();
+    await initLearningSection();
     initCalendarSection();
     initChatSection();
 
@@ -67,8 +90,10 @@ function initDashboard() {
 function setupNavigation() {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function (e) {
-            e.preventDefault();
             const section = this.dataset.section;
+            if (!section) return; // Allow normal navigation for items without data-section
+
+            e.preventDefault();
             showSection(section);
 
             // Update active state
@@ -125,15 +150,15 @@ function toggleSidebar() {
 // DASHBOARD SECTION
 // =============================================
 
-function initDashboardSection() {
-    const attendance = getEmployeeAttendance();
-    const work = getEmployeeWork();
+async function initDashboardSection() {
+    const attendance = await getEmployeeAttendance();
+    const work = await getEmployeeWork();
     const courses = getEmployeeCourses();
-    const messages = getUnreadMessages();
+    const messages = await getUnreadMessages();
 
     // Update stats
     document.getElementById('attendanceCount').textContent = attendance.length;
-    document.getElementById('tasksCompleted').textContent = work.filter(w => w.status === 'completed').length;
+    document.getElementById('tasksCompleted').textContent = work.filter(w => w.status === 'completed' || w.status === 'active').length;
     document.getElementById('coursesProgress').textContent = calculateLearningProgress() + '%';
     document.getElementById('unreadMessages').textContent = messages;
     document.getElementById('chatBadge').textContent = messages;
@@ -143,18 +168,18 @@ function initDashboardSection() {
     }
 
     // Render today's schedule
-    renderTodaySchedule();
+    await renderTodaySchedule();
 
     // Render recent work
-    renderRecentWork();
+    await renderRecentWork();
 
     // Render team activity
     renderTeamActivity();
 }
 
-function renderTodaySchedule() {
+async function renderTodaySchedule() {
     const container = document.getElementById('todaySchedule');
-    const events = getEmployeeEvents().filter(e => {
+    const events = (await getEmployeeEvents()).filter(e => {
         const eventDate = new Date(e.date);
         const today = new Date();
         return eventDate.toDateString() === today.toDateString();
@@ -173,9 +198,9 @@ function renderTodaySchedule() {
     `).join('');
 }
 
-function renderRecentWork() {
+async function renderRecentWork() {
     const container = document.getElementById('recentWork');
-    const work = getEmployeeWork().slice(0, 3);
+    const work = (await getEmployeeWork()).slice(0, 3);
 
     if (work.length === 0) {
         container.innerHTML = '<p class="text-muted text-sm">No work updates yet</p>';
@@ -188,8 +213,8 @@ function renderRecentWork() {
                 <i data-lucide="briefcase"></i>
             </div>
             <div class="work-details">
-                <h4>${w.title}</h4>
-                <p>${timeAgo(w.createdAt)}</p>
+                <h4>${w.activity || w.title}</h4>
+                <p>${timeAgo(w.created_at || w.createdAt)}</p>
             </div>
         </div>
     `).join('');
@@ -197,16 +222,23 @@ function renderRecentWork() {
     lucide.createIcons();
 }
 
-function renderTeamActivity() {
+async function renderTeamActivity() {
     const container = document.getElementById('teamActivity');
-    const activities = getActivityLog().slice(0, 4);
+    if (!container) return;
+
+    const activities = await getActivityLogFromDB(4);
+
+    if (activities.length === 0) {
+        container.innerHTML = '<p class="text-muted text-sm text-center p-4">No recent activity</p>';
+        return;
+    }
 
     container.innerHTML = activities.map(activity => `
         <div class="activity-item">
-            <div class="activity-avatar">${getInitials(activity.employee)}</div>
+            <div class="activity-avatar">${getInitials(activity.employee_name || activity.employee)}</div>
             <div class="activity-content">
-                <p class="activity-text">${activity.employee} ${activity.description}</p>
-                <span class="activity-time">${timeAgo(activity.timestamp)}</span>
+                <p class="activity-text">${activity.employee_name || activity.employee} ${activity.description}</p>
+                <span class="activity-time">${timeAgo(activity.created_at || activity.timestamp)}</span>
             </div>
         </div>
     `).join('');
@@ -216,20 +248,39 @@ function renderTeamActivity() {
 // PROFILE SECTION
 // =============================================
 
-function initProfileSection() {
-    document.getElementById('profileAvatar').textContent = getInitials(currentEmployee.name);
-    document.getElementById('profileName').textContent = currentEmployee.name;
-    document.getElementById('profileRole').textContent = `${currentEmployee.role} • ${currentEmployee.department}`;
+async function initProfileSection() {
+    const avatarEl = document.getElementById('profileAvatar');
+    const nameEl = document.getElementById('profileName');
+    const roleEl = document.getElementById('profileRole');
+    const joinDateEl = document.getElementById('joinDate');
+    const departmentEl = document.getElementById('department');
 
-    document.getElementById('joinDate').textContent = new Date(currentEmployee.joinDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
-    document.getElementById('department').textContent = currentEmployee.department;
+    if (nameEl) nameEl.textContent = currentEmployee.name;
+    if (roleEl) roleEl.textContent = `${currentEmployee.role || currentEmployee.position} • ${currentEmployee.department}`;
+
+    const joinDate = currentEmployee.join_date || currentEmployee.joinDate || new Date().toISOString();
+    if (joinDateEl) joinDateEl.textContent = new Date(joinDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+    if (departmentEl) departmentEl.textContent = currentEmployee.department;
+
     document.getElementById('lastActive').textContent = 'Now';
 
+    // Handle profile photo
+    if (currentEmployee.profile_photo || currentEmployee.photo) {
+        avatarEl.innerHTML = `<img src="${currentEmployee.profile_photo || currentEmployee.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    } else {
+        avatarEl.textContent = getInitials(currentEmployee.name);
+    }
+
     // Form fields
-    document.getElementById('editName').value = currentEmployee.name;
-    document.getElementById('editRole').value = currentEmployee.role;
-    document.getElementById('editEmail').value = currentEmployee.email;
-    document.getElementById('editPhone').value = currentEmployee.phone;
+    const editName = document.getElementById('editName');
+    const editRole = document.getElementById('editRole');
+    const editEmail = document.getElementById('editEmail');
+    const editPhone = document.getElementById('editPhone');
+
+    if (editName) editName.value = currentEmployee.name;
+    if (editRole) editRole.value = currentEmployee.role || currentEmployee.position;
+    if (editEmail) editEmail.value = currentEmployee.email;
+    if (editPhone) editPhone.value = currentEmployee.phone;
 }
 
 // =============================================
@@ -249,18 +300,18 @@ const ATTENDANCE_CONFIG = {
     halfDayHours: 4         // 4 hours for half day
 };
 
-function initAttendanceSection() {
-    checkTodayAttendance();
-    renderAttendanceHistory();
-    updateAttendanceStats();
-    updateAttendanceTimer();
+async function initAttendanceSection() {
+    await checkTodayAttendance();
+    await renderAttendanceHistory();
+    await updateAttendanceStats();
+    await updateAttendanceTimer();
 
     // Update timer every minute
     setInterval(updateAttendanceTimer, 60000);
 }
 
-function checkTodayAttendance() {
-    const attendance = getEmployeeAttendance();
+async function checkTodayAttendance() {
+    const attendance = await getEmployeeAttendance();
     const today = new Date().toDateString();
     const todayRecord = attendance.find(a => new Date(a.date).toDateString() === today);
 
@@ -299,8 +350,8 @@ function checkTodayAttendance() {
         document.getElementById('checkInLocation').textContent = locationDisplay;
 
         // Show attendance photo if available
-        if (todayRecord.photo) {
-            document.getElementById('attendancePhoto').src = todayRecord.photo;
+        if (todayRecord.photo_url || todayRecord.photo) {
+            document.getElementById('attendancePhoto').src = todayRecord.photo_url || todayRecord.photo;
             document.getElementById('attendancePhotoPreview').style.display = 'block';
         }
 
@@ -365,8 +416,8 @@ function checkTodayAttendance() {
 }
 
 // Update work timer
-function updateAttendanceTimer() {
-    const attendance = getEmployeeAttendance();
+async function updateAttendanceTimer() {
+    const attendance = await getEmployeeAttendance();
     const today = new Date().toDateString();
     const todayRecord = attendance.find(a => new Date(a.date).toDateString() === today);
 
@@ -520,121 +571,147 @@ function retakePhoto() {
 }
 
 // Confirm attendance with photo (Check-In)
-function confirmAttendance() {
+async function confirmAttendance() {
     if (!capturedPhotoData) {
         showToast('Please capture a photo first.', 'warning');
         return;
     }
 
+    // Show loading state
+    const confirmBtn = document.getElementById('confirmAttendanceBtn');
+    const originalHtml = confirmBtn.innerHTML;
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> <span>Marking...</span>';
+    lucide.createIcons();
+
     const now = new Date();
     const currentHour = now.getHours();
-    const currentTime = currentHour + (now.getMinutes() / 60); // e.g., 10:30 = 10.5
-    const attendance = getEmployeeAttendance();
+    const currentTime = currentHour + (now.getMinutes() / 60);
 
-    // Determine status: before 10 AM = present, 10:00-10:30 = late
+    // Determine status
     let status = 'present';
     if (currentTime >= ATTENDANCE_CONFIG.checkInOnTime) {
         status = 'late';
     }
 
-    // Get location
+    // Capture location
     let location = 'Office';
+    try {
+        if (navigator.geolocation) {
+            const pos = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+            });
+            location = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+        }
+    } catch (err) {
+        console.log('Location error:', err.message);
+    }
+
     const selectedMode = document.querySelector('input[name="workMode"]:checked')?.value || 'Office';
 
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                location = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
-            },
-            () => {
-                location = 'Office';
-            }
-        );
+    // Upload photo to Supabase Storage if possible
+    let photoUrl = capturedPhotoData;
+    try {
+        if (typeof uploadFile === 'function') {
+            const fileName = `attendance_${currentEmployee.id}_${Date.now()}.jpg`;
+            // Convert dataURL to Blob
+            const response = await fetch(capturedPhotoData);
+            const blob = await response.blob();
+            const uploadedUrl = await uploadFile(blob, fileName, 'attendance');
+            if (uploadedUrl) photoUrl = uploadedUrl;
+        }
+    } catch (err) {
+        console.error('Photo upload error:', err);
     }
 
     const newRecord = {
-        id: Date.now(),
-        employeeId: currentEmployee.id,
+        employee_id: currentEmployee.id,
         date: now.toISOString(),
-        checkInTime: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-        time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), // Legacy
-        checkOutTime: null,
-        totalHours: null,
+        check_in_time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
         status: status,
         location: location,
-        workMode: selectedMode,
-        photo: capturedPhotoData
+        work_mode: selectedMode,
+        photo_url: photoUrl
     };
 
-    attendance.unshift(newRecord);
-    saveEmployeeAttendance(attendance);
+    const result = await saveEmployeeAttendance(newRecord);
 
-    addActivity('login', currentEmployee.name, `Checked in at ${newRecord.checkInTime}`);
+    addActivity('login', currentEmployee.name, `Checked in at ${newRecord.check_in_time}`);
 
     // Reset camera section
     document.getElementById('cameraSection').classList.remove('active');
     capturedPhotoData = null;
 
-    checkTodayAttendance();
-    renderAttendanceHistory();
-    updateAttendanceStats();
-    initDashboardSection();
+    await checkTodayAttendance();
+    await renderAttendanceHistory();
+    await updateAttendanceStats();
+    await initDashboardSection();
 
-    showToast(`Checked in at ${newRecord.checkInTime}! Work 8 hours for full day.`, 'success');
-    lucide.createIcons();
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = originalHtml;
+
+    showToast(`Checked in at ${newRecord.check_in_time}! Work 8 hours for full day.`, 'success');
 }
 
 // Checkout function
-function checkOut() {
-    const attendance = getEmployeeAttendance();
+async function checkOut() {
+    const attendance = await getEmployeeAttendance();
     const today = new Date().toDateString();
-    const todayIndex = attendance.findIndex(a => new Date(a.date).toDateString() === today);
+    const todayRecord = attendance.find(a => new Date(a.date).toDateString() === today);
 
-    if (todayIndex === -1) {
+    if (!todayRecord) {
         showToast('No check-in record found for today.', 'error');
         return;
     }
 
-    const todayRecord = attendance[todayIndex];
     const now = new Date();
     const checkInTime = new Date(todayRecord.date);
 
     // Calculate hours worked
     const diffMs = now - checkInTime;
-    const totalHours = (diffMs / (1000 * 60 * 60)).toFixed(1);
+    const totalHoursNum = (diffMs / (1000 * 60 * 60));
+    const totalHoursStr = totalHoursNum.toFixed(1) + ' hrs';
 
-    // Determine final status based on hours worked
+    // Determine final status
     let finalStatus = 'present';
-    if (parseFloat(totalHours) >= ATTENDANCE_CONFIG.fullDayHours) {
+    if (totalHoursNum >= ATTENDANCE_CONFIG.fullDayHours) {
         finalStatus = 'full-day';
-    } else if (parseFloat(totalHours) >= ATTENDANCE_CONFIG.halfDayHours) {
+    } else if (totalHoursNum >= ATTENDANCE_CONFIG.halfDayHours) {
         finalStatus = 'half-day';
     } else {
         finalStatus = 'partial';
     }
 
-    // Update record with check-out info
-    attendance[todayIndex] = {
-        ...todayRecord,
-        checkOutTime: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-        totalHours: totalHours + ' hrs',
-        status: finalStatus
-    };
+    // Update record in Supabase
+    if (typeof supabaseClient !== 'undefined') {
+        const { error } = await supabaseClient
+            .from('attendance')
+            .update({
+                check_out_time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                total_hours: totalHoursStr,
+                status: finalStatus
+            })
+            .eq('id', todayRecord.id);
 
-    saveEmployeeAttendance(attendance);
+        if (error) {
+            console.error('Checkout error:', error);
+            showToast('Failed to save checkout to database.', 'error');
+            return;
+        }
+    }
 
-    addActivity('update', currentEmployee.name, `Checked out after ${totalHours} hours`);
+    addActivity('update', currentEmployee.name, `Checked out after ${totalHoursStr}`);
 
-    checkTodayAttendance();
-    renderAttendanceHistory();
-    updateAttendanceStats();
+    await checkTodayAttendance();
+    await renderAttendanceHistory();
+    await updateAttendanceStats();
 
-    if (parseFloat(totalHours) >= ATTENDANCE_CONFIG.fullDayHours) {
-        showToast(`Full day completed! Total: ${totalHours} hours 🎉`, 'success');
-    } else if (parseFloat(totalHours) >= ATTENDANCE_CONFIG.halfDayHours) {
-        showToast(`Half day logged. Total: ${totalHours} hours`, 'info');
+    if (totalHoursNum >= ATTENDANCE_CONFIG.fullDayHours) {
+        showToast(`Full day completed! Total: ${totalHoursStr} 🎉`, 'success');
+    } else if (totalHoursNum >= ATTENDANCE_CONFIG.halfDayHours) {
+        showToast(`Half day logged. Total: ${totalHoursStr}`, 'info');
     } else {
-        showToast(`Checked out early. Total: ${totalHours} hours`, 'warning');
+        showToast(`Checked out early. Total: ${totalHoursStr}`, 'warning');
     }
 }
 
@@ -706,9 +783,9 @@ function markAttendance() {
     }, 300);
 }
 
-function renderAttendanceHistory(filter = 'all') {
+async function renderAttendanceHistory(filter = 'all') {
     const container = document.getElementById('attendanceList');
-    let attendance = getEmployeeAttendance();
+    let attendance = await getEmployeeAttendance();
 
     if (filter !== 'all') {
         attendance = attendance.filter(a => new Date(a.date).getMonth() === parseInt(filter));
@@ -729,30 +806,33 @@ function renderAttendanceHistory(filter = 'all') {
                 record.status === 'partial' ? 'Partial' :
                     record.status.charAt(0).toUpperCase() + record.status.slice(1);
 
+        const photo = record.photo_url || record.photo;
+
         return `
         <div class="attendance-record">
             <div class="record-info">
-                ${record.photo ? `<img src="${record.photo}" alt="Attendance" class="record-photo">` : ''}
+                ${photo ? `<img src="${photo}" alt="Attendance" class="record-photo">` : ''}
                 <div class="record-details">
                     <span class="record-date">${new Date(record.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                     <span class="record-time">
-                        In: ${record.checkInTime || record.time}
-                        ${record.checkOutTime ? ` | Out: ${record.checkOutTime}` : ''}
+                        In: ${record.check_in_time || record.time}
+                        ${record.check_out_time ? ` | Out: ${record.check_out_time}` : ''}
                     </span>
                     <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                        ${record.workMode ? `
+                        ${record.work_mode || record.workMode ? `
                             <span style="font-size: 0.7rem; color: var(--accent-cyan); background: rgba(0,212,255,0.1); padding: 2px 6px; border-radius: 4px; display: flex; align-items: center; gap: 4px;">
-                                <i data-lucide="${record.workMode === 'Office' ? 'building-2' : 'home'}" style="width: 10px; height: 10px;"></i>
-                                ${record.workMode}
+                                <i data-lucide="${(record.work_mode || record.workMode) === 'Office' ? 'building-2' : 'home'}" style="width: 10px; height: 10px;"></i>
+                                ${record.work_mode || record.workMode}
                             </span>
                         ` : ''}
-                        ${record.totalHours ? `<span class="record-hours" style="margin:0;">${record.totalHours}</span>` : ''}
+                        ${record.total_hours || record.totalHours ? `<span class="record-hours" style="margin:0;">${record.total_hours || record.totalHours}</span>` : ''}
                     </div>
                 </div>
             </div>
             <span class="record-status ${statusClass}">${statusText}</span>
         </div>
     `}).join('');
+    lucide.createIcons();
 }
 
 function filterAttendance() {
@@ -760,8 +840,8 @@ function filterAttendance() {
     renderAttendanceHistory(month);
 }
 
-function updateAttendanceStats() {
-    const attendance = getEmployeeAttendance();
+async function updateAttendanceStats() {
+    const attendance = await getEmployeeAttendance();
     const thisMonth = attendance.filter(a => {
         const date = new Date(a.date);
         return date.getMonth() === new Date().getMonth() && date.getFullYear() === new Date().getFullYear();
@@ -786,7 +866,7 @@ function updateAttendanceStats() {
 // WORK SECTION - TIMELINE
 // =============================================
 
-function initWorkSection() {
+async function initWorkSection() {
     // Set today's date
     const today = new Date();
     document.getElementById('timelineDate').textContent = today.toLocaleDateString('en-IN', {
@@ -795,98 +875,32 @@ function initWorkSection() {
 
     populateTimeSelects();
     checkEditorFields();
-    renderTodayTimeline();
-    updateWorkSummary();
+    await renderTodayTimeline();
+    await updateWorkSummary();
     renderWorkHistoryDays();
 }
 
-function checkEditorFields() {
-    const isEditor = currentEmployee && (
-        currentEmployee.roles?.includes('video-editor') ||
-        currentEmployee.role?.toLowerCase()?.includes('video')
-    );
-    const editorRow = document.getElementById('editorFieldsRow');
-    if (editorRow) {
-        editorRow.style.display = isEditor ? 'flex' : 'none';
-    }
-}
+// Get today's timeline data from Supabase
+async function getTodayTimeline() {
+    const today = new Date().toISOString().split('T')[0];
+    const updates = await getWorkUpdatesFromDB({ userId: currentEmployee.id });
 
-function populateTimeSelects() {
-    const startH = document.getElementById('slotStartHour');
-    const startM = document.getElementById('slotStartMin');
-    const endH = document.getElementById('slotEndHour');
-    const endM = document.getElementById('slotEndMin');
-
-    if (!startH) return;
-
-    // Hours (6 AM to 7 PM - 24h: 6 to 19)
-    let hOptions = '';
-    for (let i = 6; i <= 19; i++) {
-        const displayH = i > 12 ? i - 12 : (i === 0 ? 12 : i);
-        const ampm = i >= 12 ? 'PM' : 'AM';
-        const label = `${displayH.toString().padStart(2, '0')} ${ampm}`;
-        hOptions += `<option value="${i}">${label}</option>`;
-    }
-    startH.innerHTML = hOptions;
-    endH.innerHTML = hOptions;
-
-    // Minutes (0-59)
-    let mOptions = '';
-    for (let i = 0; i < 60; i++) {
-        const m = i.toString().padStart(2, '0');
-        mOptions += `<option value="${i}">${m}</option>`;
-    }
-    startM.innerHTML = mOptions;
-    endM.innerHTML = mOptions;
-
-    // Default values (9:00 AM to 10:00 AM)
-    startH.value = "9";
-    endH.value = "10";
-}
-
-// Get today's timeline data
-function getTodayTimeline() {
-    const allTimelines = JSON.parse(localStorage.getItem('workTimelines') || '{}');
-    const today = new Date().toDateString();
-    return allTimelines[today] || [];
-}
-
-// Save today's timeline
-function saveTodayTimeline(slots) {
-    const allTimelines = JSON.parse(localStorage.getItem('workTimelines') || '{}');
-    const today = new Date().toDateString();
-    allTimelines[today] = slots;
-    localStorage.setItem('workTimelines', JSON.stringify(allTimelines));
-}
-
-// Format time (decimal hour to 12h string)
-function formatTime(hour) {
-    if (hour === 0 || hour === 24) return '12:00 AM';
-
-    const h = Math.floor(hour);
-    const m = Math.round((hour % 1) * 60);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
-
-    return `${displayH}:${m.toString().padStart(2, '0')} ${ampm}`;
-}
-
-// Convert "HH:MM" string to decimal hour
-function timeToFloat(timeStr) {
-    if (!timeStr) return 0;
-    const [h, m] = timeStr.split(':').map(Number);
-    return h + (m / 60);
-}
-
-// Convert decimal hour to "HH:MM" string (for input value)
-function floatToTimeStr(f) {
-    const h = Math.floor(f);
-    const m = Math.round((f % 1) * 60);
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    // Filter for today's updates and map to timeline format
+    return updates
+        .filter(u => u.date === today)
+        .map(u => ({
+            id: u.id,
+            startTime: parseFloat(u.start_time),
+            endTime: parseFloat(u.end_time),
+            activity: u.activity,
+            client: u.client,
+            videoMins: u.video_mins,
+            createdAt: u.created_at
+        }));
 }
 
 // Add new time slot
-function addTimeSlot() {
+async function addTimeSlot() {
     const sH = parseInt(document.getElementById('slotStartHour').value);
     const sM = parseInt(document.getElementById('slotStartMin').value);
     const eH = parseInt(document.getElementById('slotEndHour').value);
@@ -908,51 +922,59 @@ function addTimeSlot() {
         return;
     }
 
-    const timeline = getTodayTimeline();
+    // Show loading
+    const addBtn = document.querySelector('.slot-add-btn');
+    const originalHtml = addBtn.innerHTML;
+    addBtn.disabled = true;
+    addBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i>';
+    lucide.createIcons();
 
-    const newSlot = {
-        id: Date.now(),
-        startTime,
-        endTime,
-        activity,
-        client,
-        videoMins,
-        createdAt: new Date().toISOString()
+    const newUpdate = {
+        employee_id: currentEmployee.id,
+        date: new Date().toISOString().split('T')[0],
+        start_time: startTime.toString(),
+        end_time: endTime.toString(),
+        activity: activity,
+        client: client,
+        video_mins: videoMins,
+        status: 'completed'
     };
 
-    timeline.push(newSlot);
+    const result = await addWorkUpdateToDB(newUpdate);
 
-    // Sort by start time
-    timeline.sort((a, b) => a.startTime - b.startTime);
+    if (result) {
+        // Clear form
+        document.getElementById('slotActivity').value = '';
+        if (document.getElementById('slotClient')) document.getElementById('slotClient').value = '';
+        if (document.getElementById('slotVideoMins')) document.getElementById('slotVideoMins').value = '';
 
-    saveTodayTimeline(timeline);
+        // Auto-update next start time
+        document.getElementById('slotStartHour').value = eH;
+        document.getElementById('slotStartMin').value = eM;
 
-    // Clear form
-    document.getElementById('slotActivity').value = '';
-    if (document.getElementById('slotClient')) document.getElementById('slotClient').value = '';
-    if (document.getElementById('slotVideoMins')) document.getElementById('slotVideoMins').value = '';
+        // Suggest 1 hour later for end
+        const nextEndH = Math.min(eH + 1, 23);
+        document.getElementById('slotEndHour').value = nextEndH;
+        document.getElementById('slotEndMin').value = eM;
 
-    // Auto-update next start time
-    document.getElementById('slotStartHour').value = eH;
-    document.getElementById('slotStartMin').value = eM;
+        await renderTodayTimeline();
+        await updateWorkSummary();
 
-    // Suggest 1 hour later for end
-    const nextEndH = Math.min(eH + 1, 23);
-    document.getElementById('slotEndHour').value = nextEndH;
-    document.getElementById('slotEndMin').value = eM;
+        addActivity('update', currentEmployee.name, `Logged: ${formatTime(startTime)} - ${formatTime(endTime)} → ${activity}`);
+        showToast('Added to timeline!', 'success');
+    } else {
+        showToast('Failed to save update', 'error');
+    }
 
-    renderTodayTimeline();
-    updateWorkSummary();
-
-    addActivity('update', currentEmployee.name, `Logged: ${formatTime(startTime)} - ${formatTime(endTime)} → ${activity}`);
-    showToast('Added to timeline!', 'success');
+    addBtn.disabled = false;
+    addBtn.innerHTML = originalHtml;
     lucide.createIcons();
 }
 
 // Render today's timeline
-function renderTodayTimeline() {
+async function renderTodayTimeline() {
     const container = document.getElementById('todayTimeline');
-    const timeline = getTodayTimeline();
+    const timeline = await getTodayTimeline();
 
     // Work day range (6 AM to 7 PM)
     const workStart = 6; // 6 AM
@@ -970,9 +992,11 @@ function renderTodayTimeline() {
 
         if (activeSlot) {
             const duration = activeSlot.endTime - activeSlot.startTime;
-            const durationText = duration >= 1
-                ? `${Math.floor(duration)}h ${duration % 1 === 0.75 ? '45m' : (duration % 1 === 0.5 ? '30m' : '')}`
-                : `${Math.round(duration * 60)}m`;
+            let durationText = '';
+            const hours = Math.floor(duration);
+            const mins = Math.round((duration % 1) * 60);
+            if (hours > 0) durationText += `${hours}h `;
+            if (mins > 0) durationText += `${mins}m`;
 
             const extraInfo = [];
             if (activeSlot.client) extraInfo.push(`Client: ${activeSlot.client}`);
@@ -1032,21 +1056,30 @@ function renderTodayTimeline() {
 }
 
 // Delete time slot
-function deleteTimeSlot(id) {
+async function deleteTimeSlot(id) {
     if (!confirm('Delete this time slot?')) return;
 
-    let timeline = getTodayTimeline();
-    timeline = timeline.filter(slot => slot.id !== id);
-    saveTodayTimeline(timeline);
+    if (typeof supabaseClient !== 'undefined') {
+        const { error } = await supabaseClient
+            .from('work_updates')
+            .delete()
+            .eq('id', id);
 
-    renderTodayTimeline();
-    updateWorkSummary();
+        if (error) {
+            console.error('Delete error:', error);
+            showToast('Failed to delete from database', 'error');
+            return;
+        }
+    }
+
+    await renderTodayTimeline();
+    await updateWorkSummary();
     showToast('Time slot deleted', 'info');
 }
 
 // Update work summary
-function updateWorkSummary() {
-    const timeline = getTodayTimeline();
+async function updateWorkSummary() {
+    const timeline = await getTodayTimeline();
 
     // Total activities
     const totalSlots = timeline.length;
@@ -1055,49 +1088,57 @@ function updateWorkSummary() {
     const totalHours = timeline
         .reduce((sum, slot) => sum + (slot.endTime - slot.startTime), 0);
 
-    document.getElementById('totalSlots').textContent = totalSlots;
-    document.getElementById('totalWorkHours').textContent = `${totalHours.toFixed(1)}h`;
-    document.getElementById('completedTasks').textContent = totalSlots; // All added are considered done
+    const totalSlotsEl = document.getElementById('totalSlots');
+    const totalWorkHoursEl = document.getElementById('totalWorkHours');
+    const completedTasksEl = document.getElementById('completedTasks');
+
+    if (totalSlotsEl) totalSlotsEl.textContent = totalSlots;
+    if (totalWorkHoursEl) totalWorkHoursEl.textContent = `${totalHours.toFixed(1)}h`;
+    if (completedTasksEl) completedTasksEl.textContent = totalSlots;
 }
 
 // Render work history (previous days)
-function renderWorkHistoryDays() {
+async function renderWorkHistoryDays() {
     const container = document.getElementById('workHistoryList');
-    const allTimelines = JSON.parse(localStorage.getItem('workTimelines') || '{}');
+    if (!container) return;
+
+    const updates = await getEmployeeWork();
     const days = parseInt(document.getElementById('historyDateFilter')?.value || 7);
 
-    const today = new Date();
-    const historyDays = [];
+    // Group by date
+    const grouped = {};
+    updates.forEach(u => {
+        const dateStr = u.date; // already YYYY-MM-DD
+        if (!grouped[dateStr]) grouped[dateStr] = [];
+        grouped[dateStr].push({
+            id: u.id,
+            startTime: parseFloat(u.start_time),
+            endTime: parseFloat(u.end_time),
+            activity: u.activity
+        });
+    });
 
-    for (let i = 1; i <= days; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toDateString();
+    const dates = Object.keys(grouped).sort().reverse();
+    const today = new Date().toISOString().split('T')[0];
 
-        if (allTimelines[dateStr] && allTimelines[dateStr].length > 0) {
-            historyDays.push({
-                date: dateStr,
-                timeline: allTimelines[dateStr]
-            });
-        }
-    }
+    // Filter out today and limit to requested days
+    const historyDates = dates.filter(d => d !== today).slice(0, days);
 
-    if (historyDays.length === 0) {
+    if (historyDates.length === 0) {
         container.innerHTML = '<p class="text-muted text-sm text-center p-4">No previous work history</p>';
         return;
     }
 
-    container.innerHTML = historyDays.map(day => {
-        const totalHours = day.timeline
-            .reduce((sum, slot) => sum + (slot.endTime - slot.startTime), 0);
-
-        const activities = day.timeline.map(slot => slot.activity).join(' → ');
+    container.innerHTML = historyDates.map(dateStr => {
+        const slots = grouped[dateStr];
+        const totalHours = slots.reduce((sum, slot) => sum + (slot.endTime - slot.startTime), 0);
+        const activities = slots.map(slot => slot.activity).join(' → ');
 
         return `
-            <div class="history-day" onclick="viewDayTimeline('${day.date}')">
+            <div class="history-day" onclick="viewDayTimeline('${dateStr}')">
                 <div class="history-day-header">
-                    <span class="history-date">${new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                    <span class="history-hours">${totalHours.toFixed(1)}h • ${day.timeline.length} activities</span>
+                    <span class="history-date">${new Date(dateStr).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                    <span class="history-hours">${totalHours.toFixed(1)}h • ${slots.length} activities</span>
                 </div>
                 <p class="history-activities">${activities}</p>
             </div>
@@ -1110,14 +1151,16 @@ function filterWorkHistory() {
     renderWorkHistoryDays();
 }
 
-// View specific day timeline (modal or expand)
-function viewDayTimeline(dateStr) {
-    const allTimelines = JSON.parse(localStorage.getItem('workTimelines') || '{}');
-    const dayTimeline = allTimelines[dateStr] || [];
+// View specific day timeline
+async function viewDayTimeline(dateStr) {
+    const updates = await getEmployeeWork();
+    const dayTimeline = updates.filter(u => u.date === dateStr);
 
-    // For now, show a summary in a toast
+    // Sort by start time
+    dayTimeline.sort((a, b) => parseFloat(a.start_time) - parseFloat(b.start_time));
+
     const summary = dayTimeline.map(slot =>
-        `${formatTime(slot.startTime)}-${formatTime(slot.endTime)}: ${slot.activity}`
+        `${formatTime(parseFloat(slot.start_time))}-${formatTime(parseFloat(slot.end_time))}: ${slot.activity}`
     ).join('\n');
 
     alert(`Work Timeline for ${new Date(dateStr).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}:\n\n${summary}`);
@@ -1127,10 +1170,9 @@ function viewDayTimeline(dateStr) {
 // LEARNING SECTION
 // =============================================
 
-function initLearningSection() {
-    renderCourses();
-    updateLearningProgress();
-    renderLearningLogs();
+async function initLearningSection() {
+    await renderLearningLogs();
+    await renderCourses();
     populateLearningTimeSelects();
 }
 
@@ -1165,81 +1207,89 @@ function populateLearningTimeSelects() {
     endH.value = Math.min(now.getHours() + 1, 21);
 }
 
-function addManualLearningLog() {
+async function addManualLearningLog() {
     const topic = document.getElementById('manualLearnTopic').value.trim();
     const sH = document.getElementById('manualLearnStartH').value;
     const sM = document.getElementById('manualLearnStartM').value.padStart(2, '0');
     const eH = document.getElementById('manualLearnEndH').value;
     const eM = document.getElementById('manualLearnEndM').value.padStart(2, '0');
-    const videoMins = document.getElementById('manualLearnVideoMins').value || '0';
 
     if (!topic) {
         showToast('Please enter what you learned', 'warning');
         return;
     }
 
-    const log = {
-        date: new Date().toISOString(),
-        course: 'Manual Entry',
+    const logData = {
+        userId: currentEmployee.id,
+        date: new Date().toISOString().split('T')[0],
         topic: topic,
-        from: `${sH.padStart(2, '0')}:${sM}`,
-        to: `${eH.padStart(2, '0')}:${eM}`,
-        videoMins: videoMins
+        startTime: `${sH.padStart(2, '0')}:${sM}`,
+        endTime: `${eH.padStart(2, '0')}:${eM}`
     };
 
-    const key = `learning_logs_${currentEmployee.id}`;
-    const logs = JSON.parse(localStorage.getItem(key) || '[]');
-    logs.push(log);
-    localStorage.setItem(key, JSON.stringify(logs));
+    const result = await addLearningLogToDB(logData);
 
-    showToast('Learning activity logged manually! 📚', 'success');
-
-    // Reset topic
-    document.getElementById('manualLearnTopic').value = '';
-
-    renderLearningLogs();
+    if (result) {
+        showToast('Learning activity logged manually! 📚', 'success');
+        document.getElementById('manualLearnTopic').value = '';
+        await renderLearningLogs();
+        await initDashboardSection();
+    } else {
+        showToast('Failed to save learning log', 'error');
+    }
 }
 
-function renderLearningLogs() {
+async function renderLearningLogs() {
     const container = document.getElementById('learningLogsList');
     if (!container) return;
 
-    const key = `learning_logs_${currentEmployee.id}`;
-    const logs = JSON.parse(localStorage.getItem(key) || '[]');
+    const logs = await getLearningLogsFromDB(currentEmployee.id);
 
     if (logs.length === 0) {
-        container.innerHTML = '<p class=\"text-muted text-sm text-center p-4\">No learning activity logged today</p>';
+        container.innerHTML = '<p class="text-muted text-sm text-center p-4">No learning activity logged yet</p>';
         return;
     }
 
-    // Show only today's logs
-    const today = new Date().toDateString();
-    const todayLogs = logs.filter(l => new Date(l.date).toDateString() === today);
+    // Show only today's logs or recently added
+    const today = new Date().toISOString().split('T')[0];
+    const todayLogs = logs.filter(l => l.date === today);
 
     if (todayLogs.length === 0) {
-        container.innerHTML = '<p class=\"text-muted text-sm text-center p-4\">No learning activity logged today</p>';
+        container.innerHTML = '<p class="text-muted text-sm text-center p-4">No learning activity logged today</p>';
         return;
     }
 
     container.innerHTML = todayLogs.map(log => `
         <div class="timeline-slot" style="margin-bottom: 10px; border-left-color: var(--accent-purple);">
-            <div class="slot-time" style="min-width: 140px;">
-                <span class="slot-time-range">${log.from} → ${log.to}</span>
-                <span class="slot-duration" style="color: var(--accent-purple);">${log.videoMins}m video</span>
+            <div class="slot-time" style="min-width: 110px;">
+                <span class="slot-time-range" style="font-size: 0.85rem;">${log.start_time || log.from} → ${log.end_time || log.to}</span>
             </div>
             <div class="slot-content">
                 <div class="slot-activity" style="font-weight: 600;">${log.topic}</div>
-                <div style="font-size: 0.75rem; color: var(--text-muted);">${log.course}</div>
             </div>
+            <button class="slot-delete" onclick="deleteLearningLog(${log.id})" style="margin-left: 10px;">
+                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+            </button>
         </div>
     `).join('');
     lucide.createIcons();
 }
 
-function renderCourses() {
+async function deleteLearningLog(id) {
+    if (!confirm('Delete this learning log?')) return;
+    const result = await deleteLearningLogFromDB(id);
+    if (result) {
+        showToast('Log deleted', 'info');
+        await renderLearningLogs();
+        await initDashboardSection();
+    }
+}
+
+async function renderCourses() {
     const container = document.getElementById('coursesList');
-    const courses = getEmployeeCourses();
     if (!container) return;
+
+    const courses = await getEmployeeCourses();
     if (courses.length === 0) {
         container.innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: rgba(0,212,255,0.05); border-radius: 12px; border: 1px dashed rgba(0,212,255,0.2);">
@@ -1265,10 +1315,11 @@ function renderCourses() {
     }
 
     lucide.createIcons();
+    await updateLearningProgress();
 }
 
-function updateLearningProgress() {
-    const courses = getEmployeeCourses();
+async function updateLearningProgress() {
+    const courses = await getEmployeeCourses();
     const completed = courses.filter(c => c.progress === 100).length;
     const inProgress = courses.filter(c => c.progress > 0 && c.progress < 100).length;
     const total = courses.length;
@@ -1277,72 +1328,36 @@ function updateLearningProgress() {
         ? Math.round(courses.reduce((sum, c) => sum + c.progress, 0) / total)
         : 0;
 
-    document.getElementById('completedCourses').textContent = completed;
-    document.getElementById('inProgressCourses').textContent = inProgress;
-    document.getElementById('totalCourses').textContent = total;
-    document.getElementById('progressText').textContent = avgProgress + '%';
+    const compEl = document.getElementById('completedCourses');
+    const inProgEl = document.getElementById('inProgressCourses');
+    const totalEl = document.getElementById('totalCourses');
+    const overallEl = document.getElementById('overallLearningProgress');
+
+    if (compEl) compEl.textContent = completed;
+    if (inProgEl) inProgEl.textContent = inProgress;
+    if (totalEl) totalEl.textContent = total;
+    if (overallEl) overallEl.textContent = avgProgress + '%';
 
     // Update circle progress
     const circle = document.getElementById('progressCircle');
-    const circumference = 2 * Math.PI * 45;
-    const offset = circumference - (avgProgress / 100) * circumference;
-    circle.style.strokeDashoffset = offset;
+    if (circle) {
+        const circumference = 2 * Math.PI * 45;
+        const offset = circumference - (avgProgress / 100) * circumference;
+        circle.style.strokeDashoffset = offset;
+    }
 }
 
-function calculateLearningProgress() {
-    const courses = getEmployeeCourses();
+async function calculateLearningProgress() {
+    const courses = await getEmployeeCourses();
     if (courses.length === 0) return 0;
     return Math.round(courses.reduce((sum, c) => sum + c.progress, 0) / courses.length);
 }
 
 // Course Content Library - Field Specific
-const COURSE_LIBRARY = {
-    'video-editor': [
-        {
-            id: 've1', title: 'High-Energy Social Editing', description: 'Master the art of fast-paced social media video editing.', icon: 'video', modules: [
-                { title: 'The Hook Strategy', content: 'The first 3 seconds are everything. Learn how to stop the scroll with dynamic openers, kinetic typography, and sound triggers.' },
-                { title: 'Rhythmic Cutting', content: 'Cutting to the beat of trending audio. Techniques for punchy transitions and maintaining high viewer engagement throughout the video.' },
-                { title: 'Color Grading for Emotions', content: 'Using color to set the mood. Learn our signature "vibrant-professional" look for Grofast client videos.' }
-            ]
-        },
-        { id: 've2', title: 'Adobe Premiere Speedrunning', description: 'Workflow optimizations for 3x faster delivery.', icon: 'zap' }
-    ],
-    'meta-ads': [
-        {
-            id: 'ma1', title: 'The Winning Ad Blueprint', description: 'Deep dive into Meta Ads structure for maximum ROAS.', icon: 'target', modules: [
-                { title: 'Audience Research', content: 'How to use Meta libraries and competitor research to find high-intent audiences for our specific niches.' },
-                { title: 'Creative Testing Framework', content: 'The 3:2:2 testing method explained. How to find winning ad creatives without wasting client budget.' }
-            ]
-        }
-    ],
-    'script-writer': [
-        {
-            id: 'sw1', title: 'Irresistible Ad Scripting', description: 'The psychology of high-converting video scripts.', icon: 'file-text', modules: [
-                { title: 'The AIDA Framework', content: 'Applying Attention, Interest, Desire, and Action to short-form video scripts.' },
-                { title: 'Visual Hooks', content: 'Writing scripts that tell the editor exactly what to show on screen for maximum impact.' }
-            ]
-        }
-    ],
-    'ai-automation': [
-        {
-            id: 'ai1', title: 'n8n Workflow Mastery', description: 'Building advanced automations for business growth.', icon: 'brain', modules: [
-                { title: 'Trigger & Action Logic', content: 'Understanding webhooks, schedule triggers, and node-to-node data mapping in n8n.' },
-                { title: 'AI Node Integration', content: 'Connecting OpenAI and Anthropic nodes to process business data automatically.' }
-            ]
-        }
-    ],
-    'software-management': [
-        {
-            id: 'sm1', title: 'Product Management for Teams', description: 'Managing the dev lifecycle efficiently.', icon: 'code-2', modules: [
-                { title: 'Agile & Sprints', content: 'How to run weekly sprints and manage the Grofast product roadmap using Kanban.' },
-                { title: 'Bug Reporting & QA', content: 'The proper way to document technical issues for the engineering team.' }
-            ]
-        }
-    ]
-};
+const COURSE_LIBRARY = {};
 
-function openCourse(id) {
-    const courses = getEmployeeCourses();
+async function openCourse(id) {
+    const courses = await getEmployeeCourses();
     const course = courses.find(c => c.id === id);
     if (!course) return;
 
@@ -1386,9 +1401,10 @@ function renderModules(course) {
     lucide.createIcons();
 }
 
-function loadModuleContent(courseId, moduleIndex) {
-    const courses = getEmployeeCourses();
+async function loadModuleContent(courseId, moduleIndex) {
+    const courses = await getEmployeeCourses();
     const course = courses.find(c => c.id === courseId);
+    if (!course || !course.modules[moduleIndex]) return;
     const module = course.modules[moduleIndex];
 
     const contentArea = document.getElementById('moduleContent');
@@ -1461,43 +1477,50 @@ function loadModuleContent(courseId, moduleIndex) {
     lucide.createIcons();
 }
 
-function markModuleComplete(courseId, index) {
+async function markModuleComplete(courseId, index) {
     const sH = document.getElementById('learnStartH').value;
     const sM = document.getElementById('learnStartM').value.padStart(2, '0');
     const eH = document.getElementById('learnEndH').value;
     const eM = document.getElementById('learnEndM').value.padStart(2, '0');
-    const videoMins = document.getElementById('learnVideoMins').value || '0';
 
-    const courses = getEmployeeCourses();
+    // Fetch courses to get module info
+    const courses = await getEmployeeCourses();
     const course = courses.find(c => c.id === courseId);
+    if (!course || !course.modules[index]) return;
     const module = course.modules[index];
 
-    // Create log entry
-    const log = {
-        date: new Date().toISOString(),
-        course: course.title,
-        topic: module.title,
-        from: `${sH.padStart(2, '0')}:${sM}`,
-        to: `${eH.padStart(2, '0')}:${eM}`,
-        videoMins: videoMins
+    // 1. Create learning log
+    const logData = {
+        userId: currentEmployee.id,
+        date: new Date().toISOString().split('T')[0],
+        topic: `${course.title}: ${module.title}`,
+        startTime: `${sH.padStart(2, '0')}:${sM}`,
+        endTime: `${eH.padStart(2, '0')}:${eM}`
     };
 
-    const key = `learning_logs_${currentEmployee.id}`;
-    const logs = JSON.parse(localStorage.getItem(key) || '[]');
-    logs.push(log);
-    localStorage.setItem(key, JSON.stringify(logs));
+    const logResult = await addLearningLogToDB(logData);
 
-    // Update progress in course data
-    course.progress = Math.min(course.progress + (100 / course.modules.length), 100);
-    const coursesKey = `courses_${currentEmployee.id}`;
-    localStorage.setItem(coursesKey, JSON.stringify(courses));
+    // 2. Update progress in DB
+    const progressPerModule = 100 / course.modules.length;
+    const currentProgress = course.progress;
+    const nextProgress = Math.min(Math.round(currentProgress + progressPerModule), 100);
 
-    showToast('Progress saved and activity logged! 👏', 'success');
+    const progressResult = await updateLearningProgressInDB(currentEmployee.id, courseId, {
+        progress: nextProgress,
+        status: nextProgress === 100 ? 'completed' : 'in_progress'
+    });
 
-    closeCourseModal();
-    renderCourses();
-    updateLearningProgress();
-    renderLearningLogs();
+    if (logResult || progressResult) {
+        showToast('Module completed and logged! 📚', 'success');
+        await renderCourses();
+        await renderLearningLogs();
+        await initDashboardSection();
+
+        // Refresh detail view
+        loadModuleContent(courseId, index);
+    } else {
+        showToast('Failed to save completion status', 'error');
+    }
 }
 
 function closeCourseModal() {
@@ -1605,74 +1628,103 @@ function closeEventModal() {
 // CHAT SECTION
 // =============================================
 
-function initChatSection() {
-    renderTeamList();
-    renderMessages();
+async function initChatSection() {
+    await renderTeamList();
+    await renderMessages();
+
+    // Subscribe to real-time updates
+    if (typeof subscribeToMessages === 'function') {
+        subscribeToMessages(() => {
+            renderMessages();
+            renderTeamList();
+        });
+    }
 }
 
-function renderTeamList() {
+async function renderTeamList() {
     const container = document.getElementById('teamList');
-    const employees = getEmployees();
-    const messages = getChatMessages();
+    if (!container) return;
+
+    // Fetch from Supabase
+    let employees = [];
+    if (typeof getEmployeesFromDB === 'function') {
+        employees = await getEmployeesFromDB();
+    } else {
+        employees = getEmployees();
+    }
+
+    const messages = await getChatMessages();
 
     // Add admin
     const teamMembers = [
-        { id: 0, name: 'Admin', role: 'Administrator', isAdmin: true }
+        { id: 0, name: 'Admin', role: 'Administrator', position: 'Administrator', department: 'Management', isAdmin: true }
     ];
 
     employees.forEach(emp => {
         if (emp.id !== currentEmployee.id) {
-            const unread = messages.filter(m => m.from === emp.id && !m.read && m.to === currentEmployee.id).length;
+            // Unread logic (placeholder for now)
+            const unread = 0;
             teamMembers.push({ ...emp, unread });
         }
     });
 
     container.innerHTML = teamMembers.map(member => `
-        <div class="team-member ${selectedChatRecipient === member.id ? 'active' : ''}" onclick="selectRecipient(${member.id}, '${member.name}')">
-            <div class="member-avatar">
+        <div class="chat-item ${selectedChatRecipient === member.id ? 'active' : ''}" onclick="selectRecipient(${member.id}, '${member.name}')" 
+             style="padding: 8px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.2s; position: relative;">
+            <div class="member-avatar" style="width: 28px; height: 28px; background: ${member.isAdmin ? 'var(--gradient-primary)' : 'rgba(255,255,255,0.1)'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.7rem; color: white; position: relative;">
                 ${getInitials(member.name)}
-                ${member.status === 'active' || member.isAdmin ? '<span class="online-dot"></span>' : ''}
+                ${member.status === 'active' || member.isAdmin ? '<span class="online-dot" style="position: absolute; bottom: 0; right: 0; width: 8px; height: 8px; background: #34a853; border: 2px solid #0a1628; border-radius: 50%;"></span>' : ''}
             </div>
-            <div class="member-info">
-                <span class="member-name">${member.name}</span>
-                <span class="member-role">${member.role}</span>
+            <div class="member-info" style="flex: 1; overflow: hidden;">
+                <div class="member-name" style="font-size: 0.85rem; color: ${selectedChatRecipient === member.id ? 'white' : 'rgba(255,255,255,0.7)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${member.unread > 0 ? '700' : '400'};">${member.name}</div>
             </div>
-            ${member.unread > 0 ? `<span class="member-badge">${member.unread}</span>` : ''}
+            ${member.unread > 0 ? `<span class="unread-badge" style="background: var(--accent-cyan); color: var(--bg-dark); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px;">${member.unread}</span>` : ''}
         </div>
     `).join('');
 }
 
-function selectRecipient(id, name) {
+async function selectRecipient(id, name) {
     selectedChatRecipient = id;
-    renderTeamList();
+    await renderTeamList();
 
     const header = document.getElementById('chatHeader');
     header.innerHTML = `
-        <div class="chat-recipient">
-            <div class="recipient-avatar">${getInitials(name)}</div>
-            <div class="recipient-info">
-                <h4>${name}</h4>
-                <span>${id === 0 ? 'Administrator' : 'Team Member'}</span>
+        <div class="recipient-meta" style="display: flex; align-items: center; gap: 12px;">
+            <div class="recipient-avatar" style="width: 36px; height: 36px; background: ${id === null ? 'var(--gradient-primary)' : 'var(--gradient-accent)'}; border-radius: ${id === null ? '8px' : '50%'}; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.8rem; color: ${id === null ? 'white' : 'var(--bg-dark)'};">
+                ${id === null ? '<i data-lucide="hash" style="width: 18px;"></i>' : getInitials(name)}
             </div>
+            <div class="recipient-status">
+                <h4 style="font-size: 1rem; color: #1f1f1f; font-weight: 500;">${name}</h4>
+                <span style="font-size: 0.75rem; color: #5f6368; display: flex; align-items: center; gap: 4px;">${id === null ? 'Public Space' : (id === 0 ? 'Administrator' : 'Active now')}</span>
+            </div>
+        </div>
+        <div class="header-actions" style="display: flex; gap: 16px; color: #5f6368;">
+            <i data-lucide="video" style="width: 20px; cursor: pointer;"></i>
+            <i data-lucide="star" style="width: 20px; cursor: pointer;"></i>
+            <i data-lucide="more-vertical" style="width: 20px; cursor: pointer;"></i>
         </div>
     `;
 
-    renderMessages();
+    await renderMessages();
+    lucide.createIcons();
 }
 
-function renderMessages() {
+async function renderMessages() {
     const container = document.getElementById('chatMessages');
-    const messages = getChatMessages();
+    if (!container) return;
+
+    const messages = await getChatMessages();
 
     // Show team chat or specific conversation
     let filteredMessages;
     if (selectedChatRecipient === null) {
-        filteredMessages = messages.filter(m => m.isTeamChat);
+        filteredMessages = messages.filter(m => m.is_team_chat || m.isTeamChat);
     } else {
         filteredMessages = messages.filter(m =>
-            (m.from === currentEmployee.id && m.to === selectedChatRecipient) ||
-            (m.from === selectedChatRecipient && m.to === currentEmployee.id) ||
-            m.isTeamChat
+            (m.user_id == currentEmployee.id && m.recipient_id == selectedChatRecipient) ||
+            (m.user_id == selectedChatRecipient && m.recipient_id == currentEmployee.id) ||
+            (m.from == currentEmployee.id && m.to == selectedChatRecipient) ||
+            (m.from == selectedChatRecipient && m.to == currentEmployee.id)
         );
     }
 
@@ -1688,23 +1740,28 @@ function renderMessages() {
     }
 
     container.innerHTML = filteredMessages.map(msg => {
-        const isSent = msg.from === currentEmployee.id;
-        const senderName = msg.from === currentEmployee.id
-            ? currentEmployee.name
-            : msg.from === 0
-                ? 'Admin'
-                : getEmployees().find(e => e.id === msg.from)?.name || 'Unknown';
+        const senderId = msg.user_id || msg.from;
+        const senderName = msg.user_name || msg.userName || (senderId === 0 ? 'Admin' : 'User');
+        const isSent = senderId == currentEmployee.id;
 
-        // Parse mentions
-        const messageText = msg.text.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+        const initials = getInitials(senderName);
+        const content = msg.content || msg.text || '';
+        const messageText = content.replace(/@(\w+)/g, '<span class="mention" style="color: #1a73e8; font-weight: 600; cursor: pointer;">@$1</span>');
+        const timestamp = msg.created_at || msg.timestamp;
 
         return `
-            <div class="message ${isSent ? 'sent' : ''}">
-                <div class="message-avatar">${getInitials(senderName)}</div>
-                <div class="message-content">
-                    <span class="message-sender">${senderName}</span>
-                    <p class="message-text">${messageText}</p>
-                    <span class="message-time">${timeAgo(msg.timestamp)}</span>
+            <div class="message-group" style="display: flex; gap: 12px; ${isSent ? 'flex-direction: row-reverse;' : ''} margin-bottom: 15px;">
+                <div class="user-avatar" style="width: 32px; height: 32px; background: ${isSent ? 'var(--gradient-accent)' : '#e8eaed'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; color: ${isSent ? 'var(--bg-dark)' : '#5f6368'}; flex-shrink: 0;">
+                    ${initials}
+                </div>
+                <div class="message-bubble-wrapper" style="max-width: 70%; display: flex; flex-direction: column; gap: 4px; ${isSent ? 'align-items: flex-end;' : ''}">
+                    <div class="message-meta" style="display: flex; gap: 8px; align-items: center;">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: #3c4043;">${senderName}</span>
+                        <span style="font-size: 0.7rem; color: #70757a;">${timeAgo(timestamp)}</span>
+                    </div>
+                    <div class="message-bubble" style="background: ${isSent ? '#e8f0fe' : '#ffffff'}; padding: 8px 16px; border-radius: 12px; border: 1px solid ${isSent ? '#d2e3fc' : '#dadce0'}; color: #1f1f1f; font-size: 0.9rem; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        ${messageText}
+                    </div>
                 </div>
             </div>
         `;
@@ -1713,54 +1770,70 @@ function renderMessages() {
     container.scrollTop = container.scrollHeight;
 }
 
-function filterTeamMembers() {
+async function filterTeamMembers() {
     const search = document.getElementById('chatSearch').value.toLowerCase();
-    const employees = getEmployees().filter(emp =>
+
+    let employees = [];
+    if (typeof getEmployeesFromDB === 'function') {
+        employees = await getEmployeesFromDB();
+    } else {
+        employees = getEmployees();
+    }
+
+    const filtered = employees.filter(emp =>
         emp.id !== currentEmployee.id &&
         emp.name.toLowerCase().includes(search)
     );
 
-    // Re-render filtered list
+    // Re-render filtered list (simplified)
     const container = document.getElementById('teamList');
-    container.innerHTML = employees.map(emp => `
-        <div class="team-member" onclick="selectRecipient(${emp.id}, '${emp.name}')">
-            <div class="member-avatar">
+    if (!container) return;
+
+    container.innerHTML = filtered.map(emp => `
+        <div class="chat-item ${selectedChatRecipient === emp.id ? 'active' : ''}" onclick="selectRecipient(${emp.id}, '${emp.name}')" 
+             style="padding: 8px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+            <div class="member-avatar" style="width: 28px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white;">
                 ${getInitials(emp.name)}
-                ${emp.status === 'active' ? '<span class="online-dot"></span>' : ''}
             </div>
             <div class="member-info">
-                <span class="member-name">${emp.name}</span>
-                <span class="member-role">${emp.role}</span>
+                <div class="member-name" style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">${emp.name}</div>
             </div>
         </div>
     `).join('');
 }
 
-function checkMention() {
+async function checkMention() {
     const input = document.getElementById('messageInput');
     const suggestions = document.getElementById('mentionSuggestions');
-    const text = input.value;
+    if (!input || !suggestions) return;
 
-    // Check if typing a mention
+    const text = input.value;
     const mentionMatch = text.match(/@(\w*)$/);
 
     if (mentionMatch) {
         const query = mentionMatch[1].toLowerCase();
-        const employees = getEmployees().filter(emp =>
+
+        let employees = [];
+        if (typeof getEmployeesFromDB === 'function') {
+            employees = await getEmployeesFromDB();
+        } else {
+            employees = getEmployees();
+        }
+
+        const filtered = employees.filter(emp =>
             emp.name.toLowerCase().includes(query) && emp.id !== currentEmployee.id
         );
 
         // Add admin
-        const allMembers = [{ id: 0, name: 'Admin', role: 'Administrator' }, ...employees];
-        const filtered = allMembers.filter(m => m.name.toLowerCase().includes(query));
+        const allMembers = [{ id: 0, name: 'Admin', role: 'Administrator' }, ...filtered];
 
-        if (filtered.length > 0) {
-            suggestions.innerHTML = filtered.map(m => `
-                <div class="mention-item" onclick="insertMention('${m.name}')">
-                    <div class="member-avatar">${getInitials(m.name)}</div>
+        if (allMembers.length > 0) {
+            suggestions.innerHTML = allMembers.map(m => `
+                <div class="mention-item" onclick="insertMention('${m.name}')" style="display: flex; align-items: center; gap: 10px; padding: 8px; cursor: pointer;">
+                    <div class="member-avatar" style="width: 24px; height: 24px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6rem;">${getInitials(m.name)}</div>
                     <div class="member-info">
-                        <span class="member-name">${m.name}</span>
-                        <span class="member-role">${m.role}</span>
+                        <span class="member-name" style="font-size: 0.8rem; display: block;">${m.name}</span>
+                        <span class="member-role" style="font-size: 0.65rem; color: rgba(255,255,255,0.5);">${m.role || m.position || ''}</span>
                     </div>
                 </div>
             `).join('');
@@ -1789,53 +1862,34 @@ function handleMessageKeydown(event) {
     }
 }
 
-function sendMessage() {
+async function sendMessage() {
     const input = document.getElementById('messageInput');
     const text = input.value.trim();
 
     if (!text) return;
 
-    const messages = getChatMessages();
-
-    // Check for mentions and create notifications
-    const mentions = text.match(/@(\w+)/g) || [];
-    const mentionedUsers = [];
-
-    mentions.forEach(mention => {
-        const name = mention.slice(1); // Remove @
-        const employees = getEmployees();
-        const mentioned = employees.find(e => e.name.replace(' ', '').toLowerCase() === name.toLowerCase());
-        if (mentioned) {
-            mentionedUsers.push(mentioned.id);
-        }
-        if (name.toLowerCase() === 'admin') {
-            mentionedUsers.push(0);
-        }
-    });
-
-    const newMessage = {
-        id: Date.now(),
-        from: currentEmployee.id,
-        to: selectedChatRecipient,
-        text: text,
-        timestamp: new Date().toISOString(),
+    const messageData = {
+        userId: currentEmployee.id,
+        userName: currentEmployee.name,
+        recipientId: selectedChatRecipient,
+        content: text,
         isTeamChat: selectedChatRecipient === null,
-        mentions: mentionedUsers,
-        read: false
+        type: 'text'
     };
 
-    messages.push(newMessage);
-    saveChatMessages(messages);
+    const result = await saveChatMessages(messageData);
 
-    // Add activity for mentions
-    if (mentionedUsers.length > 0) {
-        addActivity('update', currentEmployee.name, `Mentioned team members in chat`);
+    if (result) {
+        input.value = '';
+        await renderMessages();
+
+        // Check for mentions
+        if (text.includes('@')) {
+            addActivity('update', currentEmployee.name, `Mentioned team members in chat`);
+        }
+    } else {
+        showToast('Failed to send message', 'error');
     }
-
-    input.value = '';
-    renderMessages();
-
-    showToast('Message sent!', 'success');
 }
 
 function showEmoji() {
@@ -1848,173 +1902,175 @@ function showEmoji() {
 
 function setupFormHandlers() {
     // Personal form
-    document.getElementById('personalForm').addEventListener('submit', function (e) {
-        e.preventDefault();
+    const personalForm = document.getElementById('personalForm');
+    if (personalForm) {
+        personalForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-        currentEmployee.name = document.getElementById('editName').value;
-        currentEmployee.email = document.getElementById('editEmail').value;
-        currentEmployee.phone = document.getElementById('editPhone').value;
+            const updatedData = {
+                name: document.getElementById('editName').value,
+                email: document.getElementById('editEmail').value,
+                phone: document.getElementById('editPhone').value,
+                bio: document.getElementById('editBio') ? document.getElementById('editBio').value : currentEmployee.bio
+            };
 
-        const employees = getEmployees();
-        const index = employees.findIndex(emp => emp.id === currentEmployee.id);
-        if (index !== -1) {
-            employees[index] = currentEmployee;
-            saveEmployees(employees);
-        }
+            const result = await updateEmployeeInDB(currentEmployee.id, updatedData);
 
-        addActivity('profile', currentEmployee.name, 'Updated profile information');
-        initProfileSection();
-        initDashboard();
-
-        showToast('Profile updated successfully!', 'success');
-    });
+            if (result) {
+                currentEmployee = { ...currentEmployee, ...updatedData };
+                addActivity('profile', currentEmployee.name, 'Updated profile information');
+                await initProfileSection();
+                await initDashboard();
+                showToast('Profile updated successfully!', 'success');
+            } else {
+                showToast('Failed to update profile', 'error');
+            }
+        });
+    }
 
     // Password form
-    document.getElementById('passwordForm').addEventListener('submit', function (e) {
-        e.preventDefault();
+    const passwordForm = document.getElementById('passwordForm');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-        const currentPass = document.getElementById('currentPassword').value;
-        const newPass = document.getElementById('newPassword').value;
+            const currentPass = document.getElementById('currentPassword').value;
+            const newPass = document.getElementById('newPassword').value;
 
-        if (currentPass !== currentEmployee.password) {
-            showToast('Current password is incorrect', 'error');
-            return;
-        }
+            if (currentPass !== currentEmployee.password) {
+                showToast('Current password is incorrect', 'error');
+                return;
+            }
 
-        if (newPass.length < 6) {
-            showToast('New password must be at least 6 characters', 'warning');
-            return;
-        }
+            if (newPass.length < 6) {
+                showToast('New password must be at least 6 characters', 'warning');
+                return;
+            }
 
-        currentEmployee.password = newPass;
-        const employees = getEmployees();
-        const index = employees.findIndex(emp => emp.id === currentEmployee.id);
-        if (index !== -1) {
-            employees[index] = currentEmployee;
-            saveEmployees(employees);
-        }
+            const result = await updateEmployeeInDB(currentEmployee.id, { password: newPass });
 
-        addActivity('profile', currentEmployee.name, 'Changed password');
-
-        document.getElementById('currentPassword').value = '';
-        document.getElementById('newPassword').value = '';
-
-        showToast('Password updated successfully!', 'success');
-    });
+            if (result) {
+                currentEmployee.password = newPass;
+                addActivity('profile', currentEmployee.name, 'Changed password');
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                showToast('Password updated successfully!', 'success');
+            } else {
+                showToast('Failed to update password', 'error');
+            }
+        });
+    }
 
     // Work form
-    document.getElementById('workForm').addEventListener('submit', function (e) {
-        e.preventDefault();
+    const workForm = document.getElementById('workForm');
+    if (workForm) {
+        workForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-        const work = getEmployeeWork();
-        const newWork = {
-            id: Date.now(),
-            employeeId: currentEmployee.id,
-            title: document.getElementById('workTitle').value,
-            description: document.getElementById('workDescription').value,
-            category: document.getElementById('workCategory').value,
-            status: document.getElementById('workStatus').value,
-            createdAt: new Date().toISOString()
-        };
+            const newWork = {
+                userId: currentEmployee.id,
+                title: document.getElementById('workTitle').value,
+                description: document.getElementById('workDescription').value,
+                category: document.getElementById('workCategory').value,
+                status: document.getElementById('workStatus').value
+            };
 
-        work.unshift(newWork);
-        saveEmployeeWork(work);
+            const result = await addWorkUpdateToDB(newWork);
 
-        addActivity('update', currentEmployee.name, `Added work update: ${newWork.title}`);
-
-        this.reset();
-        renderWorkHistory();
-        initDashboardSection();
-
-        showToast('Work update added!', 'success');
-    });
+            if (result) {
+                addActivity('update', currentEmployee.name, `Added work update: ${newWork.title}`);
+                this.reset();
+                await renderWorkHistory();
+                await initDashboardSection();
+                showToast('Work update added!', 'success');
+            } else {
+                showToast('Failed to save work update', 'error');
+            }
+        });
+    }
 
     // Event form
-    document.getElementById('eventForm').addEventListener('submit', function (e) {
-        e.preventDefault();
+    const eventForm = document.getElementById('eventForm');
+    if (eventForm) {
+        eventForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-        const events = getEmployeeEvents();
-        const newEvent = {
-            id: Date.now(),
-            employeeId: currentEmployee.id,
-            title: document.getElementById('eventTitle').value,
-            date: document.getElementById('eventDate').value,
-            time: document.getElementById('eventTime').value,
-            description: document.getElementById('eventDescription').value
-        };
+            const newEvent = {
+                userId: currentEmployee.id,
+                title: document.getElementById('eventTitle').value,
+                date: document.getElementById('eventDate').value,
+                time: document.getElementById('eventTime').value,
+                description: document.getElementById('eventDescription').value
+            };
 
-        events.push(newEvent);
-        saveEmployeeEvents(events);
+            // For now, save events to localStorage (or implement if common helper exists)
+            const events = await getEmployeeEvents();
+            events.push({ id: Date.now(), ...newEvent });
+            saveEmployeeEvents(events);
 
-        this.reset();
-        closeEventModal();
-        renderCalendar();
-        renderEvents();
-        initDashboardSection();
+            this.reset();
+            if (typeof closeEventModal === 'function') closeEventModal();
+            renderCalendar();
+            renderEvents();
+            await initDashboardSection();
 
-        showToast('Event added!', 'success');
-    });
+            showToast('Event added!', 'success');
+        });
+    }
 }
 
 // =============================================
-// DATA HELPERS
+// DATA HELPERS (UPDATED TO USE SUPABASE)
 // =============================================
 
-function getEmployeeAttendance() {
-    const key = `attendance_${currentEmployee.id}`;
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
+async function getEmployeeAttendance() {
+    return await getAttendanceFromDB({ userId: currentEmployee.id });
 }
 
-function saveEmployeeAttendance(attendance) {
-    const key = `attendance_${currentEmployee.id}`;
-    localStorage.setItem(key, JSON.stringify(attendance));
+async function saveEmployeeAttendance(record) {
+    // Note: JS helper already handles adding to DB
+    return await addAttendanceToDB(record);
 }
 
-function getEmployeeWork() {
-    const key = `work_${currentEmployee.id}`;
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
+async function getEmployeeWork() {
+    return await getWorkUpdatesFromDB({ userId: currentEmployee.id });
 }
 
-function saveEmployeeWork(work) {
-    const key = `work_${currentEmployee.id}`;
-    localStorage.setItem(key, JSON.stringify(work));
+async function saveEmployeeWork(workUpdate) {
+    return await addWorkUpdateToDB(workUpdate);
 }
 
-function getEmployeeCourses() {
-    const key = `courses_${currentEmployee.id}`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && parsed.length > 0) return parsed;
-    }
+async function getEmployeeCourses() {
+    if (!currentEmployee) return [];
 
-    // We want to serve role-specific courses if possible
-    const myRoles = currentEmployee.roles || [currentEmployee.role?.toLowerCase()?.replace(' ', '-')];
-    let customCourses = [];
+    // 1. Get field-specific modules from LEARNING_DATA
+    const field = currentEmployee.field || 'digital_marketing';
+    const fieldData = LEARNING_DATA[field] || LEARNING_DATA.digital_marketing;
 
-    myRoles.forEach(roleId => {
-        if (COURSE_LIBRARY[roleId]) {
-            // Clone the library items to avoid modifying the reference
-            const roleCourses = COURSE_LIBRARY[roleId].map(c => ({ ...c, progress: 0 }));
-            customCourses = [...customCourses, ...roleCourses];
-        }
+    // 2. Map to course structure
+    const courses = fieldData.modules.map(m => ({
+        id: m.id,
+        title: m.title,
+        description: (m.topics || []).map(t => t.title).slice(0, 3).join(', ') + '...',
+        icon: m.icon || 'book-open',
+        modules: (m.topics || []).map(t => ({ title: t.title, content: t.desc })),
+        progress: 0
+    }));
+
+    // 3. Fetch progress from Supabase
+    const dbProgress = await getLearningProgressFromDB(currentEmployee.id);
+
+    // 4. Merge progress
+    courses.forEach(course => {
+        const p = dbProgress.find(dp => dp.module_id === course.id);
+        if (p) course.progress = p.progress;
     });
 
-    // If no role-specific courses found, add a few generic ones
-    if (customCourses.length === 0) {
-        customCourses = [
-            { id: 'ai-intro', title: 'Introduction to AI', description: 'Learn the basics of Artificial Intelligence', progress: 0, icon: 'cpu', modules: [{ title: 'What is AI?', content: 'AI is the simulation of human intelligence by machines...' }, { title: 'Future of AI', content: 'AI is evolving rapidly with LLMs...' }] },
-            { id: 'comm-skills', title: 'Communication Skills', description: 'Effective workplace communication', progress: 0, icon: 'message-square', modules: [{ title: 'Active Listening', content: 'Listening is key...' }, { title: 'Email Etiquette', content: 'Professional emails should...' }] }
-        ];
-    }
-
-    localStorage.setItem(key, JSON.stringify(customCourses));
-    return customCourses;
+    return courses;
 }
 
-function getEmployeeEvents() {
+async function getEmployeeEvents() {
+    // For now, keep events in localStorage until we add events table to supabase helper
     const key = `events_${currentEmployee.id}`;
     const stored = localStorage.getItem(key);
     if (stored) return JSON.parse(stored);
@@ -2035,27 +2091,18 @@ function saveEmployeeEvents(events) {
     localStorage.setItem(key, JSON.stringify(events));
 }
 
-function getChatMessages() {
-    const stored = localStorage.getItem('chatMessages');
-    if (stored) return JSON.parse(stored);
-
-    // Default messages
-    const defaultMessages = [
-        { id: 1, from: 0, to: null, text: 'Welcome to the team chat! Feel free to discuss and collaborate here.', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), isTeamChat: true, read: true },
-        { id: 2, from: 2, to: null, text: 'Good morning everyone! 🌟', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), isTeamChat: true, read: true }
-    ];
-
-    localStorage.setItem('chatMessages', JSON.stringify(defaultMessages));
-    return defaultMessages;
+async function getChatMessages() {
+    return await getMessagesFromDB(50);
 }
 
-function saveChatMessages(messages) {
-    localStorage.setItem('chatMessages', JSON.stringify(messages));
+async function saveChatMessages(messageData) {
+    return await addMessageToDB(messageData);
 }
 
-function getUnreadMessages() {
-    const messages = getChatMessages();
-    return messages.filter(m => !m.read && (m.to === currentEmployee.id || m.mentions?.includes(currentEmployee.id))).length;
+async function getUnreadMessages() {
+    const messages = await getChatMessages();
+    // Simplified unread check for now
+    return 0;
 }
 
 // =============================================
@@ -2100,3 +2147,92 @@ function showToast(message, type = 'info') {
         toast.remove();
     }, 4000);
 }
+
+// =============================================
+// PROFILE PHOTO & BIO FUNCTIONS
+// =============================================
+
+function triggerDashboardPhotoUpload() {
+    document.getElementById('dashboardPhotoInput').click();
+}
+
+function handleDashboardPhotoUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', 'error');
+        return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+        showToast('Photo must be less than 2MB', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const base64 = e.target.result;
+
+        // Save to localStorage
+        localStorage.setItem(`profile_photo_${currentEmployee.id}`, base64);
+
+        // Update display
+        displayDashboardPhoto(base64);
+
+        showToast('Profile photo updated!', 'success');
+    };
+    reader.readAsDataURL(file);
+}
+
+function displayDashboardPhoto(base64) {
+    const photoEl = document.getElementById('dashboardProfilePhoto');
+    const initialsEl = document.getElementById('avatarInitials');
+
+    if (photoEl && base64) {
+        photoEl.src = base64;
+        photoEl.style.display = 'block';
+        if (initialsEl) initialsEl.style.display = 'none';
+    }
+}
+
+function loadDashboardProfilePhoto() {
+    if (!currentEmployee) return;
+
+    const savedPhoto = localStorage.getItem(`profile_photo_${currentEmployee.id}`);
+    if (savedPhoto) {
+        displayDashboardPhoto(savedPhoto);
+    }
+}
+
+function loadProfileData() {
+    if (!currentEmployee) return;
+
+    // Load saved profile data
+    const savedProfile = JSON.parse(localStorage.getItem(`user_profile_${currentEmployee.id}`) || '{}');
+
+    const bioEl = document.getElementById('editBio');
+    const linkedinEl = document.getElementById('editLinkedin');
+    const phoneEl = document.getElementById('editPhone');
+
+    if (bioEl) bioEl.value = savedProfile.bio || '';
+    if (linkedinEl) linkedinEl.value = savedProfile.linkedin || '';
+    if (phoneEl && savedProfile.phone) phoneEl.value = savedProfile.phone;
+}
+
+// Initialize profile on load
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(() => {
+        loadDashboardProfilePhoto();
+        loadProfileData();
+
+        // Add hover effect CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            .profile-avatar-large:hover .photo-overlay {
+                opacity: 1 !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }, 500);
+});

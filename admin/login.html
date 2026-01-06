@@ -111,8 +111,8 @@
 
         // Admin Credentials
         const ADMIN_CREDENTIALS = {
-            username: 'admin@grofast.com',
-            password: 'admin123'
+            username: 'grofastdigital@gmail.com',
+            password: 'Grofast@123'
         };
 
         // Toggle password visibility
@@ -134,12 +134,19 @@
         document.getElementById('adminLoginForm').addEventListener('submit', function (e) {
             e.preventDefault();
 
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
 
-            // Validate credentials
-            if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+            console.log('Login attempt:', username);
+
+            // Validate credentials (case-insensitive for email)
+            const isValidUser = username.toLowerCase() === ADMIN_CREDENTIALS.username.toLowerCase();
+            const isValidPass = password === ADMIN_CREDENTIALS.password;
+
+            console.log('Valid user:', isValidUser, 'Valid pass:', isValidPass);
+
+            if (isValidUser && isValidPass) {
                 // Store session
                 sessionStorage.setItem('adminLoggedIn', 'true');
                 sessionStorage.setItem('adminUser', username);
