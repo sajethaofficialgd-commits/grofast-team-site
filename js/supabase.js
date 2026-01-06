@@ -52,7 +52,7 @@ async function getEmployeeById(id) {
         const { data, error } = await supabaseClient
             .from('employees')
             .select('*')
-            .eq('id', id)
+            .eq('id', Number(id))
             .single();
 
         if (error) throw error;
@@ -135,7 +135,7 @@ async function updateEmployeeInDB(id, updates) {
         const { data, error } = await supabaseClient
             .from('employees')
             .update(updates)
-            .eq('id', id)
+            .eq('id', Number(id))
             .select()
             .single();
 
@@ -160,7 +160,7 @@ async function deleteEmployeeFromDB(id) {
         const { error } = await supabaseClient
             .from('employees')
             .delete()
-            .eq('id', id);
+            .eq('id', Number(id));
 
         if (error) throw error;
         return true;
@@ -582,7 +582,7 @@ async function deleteLearningLogFromDB(id) {
         const { error } = await supabaseClient
             .from('learning_logs')
             .delete()
-            .eq('id', id);
+            .eq('id', Number(id));
         if (error) throw error;
         return true;
     } catch (err) {

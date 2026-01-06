@@ -2257,29 +2257,66 @@ async function handleDashboardPhotoUpload(input) {
         return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-        showToast('Photo must be less than 2MB', 'error');
-        return;
-    }
+    showToast('Processing photo...', 'info');
 
     const reader = new FileReader();
-    reader.onload = async function (e) {
-        const base64 = e.target.result;
+    reader.onload = function (e) {
+        const img = new Image();
+        img.onload = async function () {
+            // Create a canvas to compress the image
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
 
-        // 1. Save to Supabase
-        const result = await updateEmployeeInDB(currentEmployee.id, { profile_photo: base64 });
+            // Max dimensions 500x500
+            const MAX_SIZE = 500;
+            if (width > height) {
+                if (width > MAX_SIZE) {
+                    height *= MAX_SIZE / width;
+                    width = MAX_SIZE;
+                }
+            } else {
+                if (height > MAX_SIZE) {
+                    width *= MAX_SIZE / height;
+                    height = MAX_SIZE;
+                }
+            }
 
-        if (result) {
-            // 2. Save to localStorage fallback
-            localStorage.setItem(`profile_photo_${currentEmployee.id}`, base64);
-            currentEmployee.profile_photo = base64;
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
 
-            // 3. Update display
-            displayDashboardPhoto(base64);
-            showToast('Profile photo updated!', 'success');
-        } else {
-            showToast('Failed to save photo to database', 'error');
-        }
+            // Compress to JPEG with 0.7 quality
+            const base64 = canvas.toDataURL('image/jpeg', 0.7);
+
+            try {
+                // 1. Save to Supabase
+                const result = await updateEmployeeInDB(currentEmployee.id, { profile_photo: base64 });
+
+                if (result) {
+                    // 2. Sync local data
+                    localStorage.setItem(`profile_photo_${currentEmployee.id}`, base64);
+                    currentEmployee.profile_photo = base64;
+
+                    // Update session storage too
+                    const sessionData = JSON.parse(sessionStorage.getItem('employeeData') || '{}');
+                    sessionData.profile_photo = base64;
+                    sessionStorage.setItem('employeeData', JSON.stringify(sessionData));
+
+                    // 3. Update display
+                    displayDashboardPhoto(base64);
+                    showToast('Profile photo updated!', 'success');
+                } else {
+                    console.error('Failed to update DB for photo');
+                    showToast('Failed to save photo to database', 'error');
+                }
+            } catch (err) {
+                console.error('Photo update error:', err);
+                showToast('Error saving photo', 'error');
+            }
+        };
+        img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 }
