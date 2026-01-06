@@ -28,11 +28,16 @@ CREATE TABLE IF NOT EXISTS attendance (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT REFERENCES employees(id) ON DELETE CASCADE,
     user_name VARCHAR(255),
-    type VARCHAR(50) NOT NULL, -- 'check_in' or 'check_out'
+    type VARCHAR(50), -- 'check_in' or 'check_out' (deprecated in favor of status)
     date DATE NOT NULL,
-    time TIME NOT NULL,
+    time TIME, -- check_in_time
+    check_in_time TIME,
+    check_out_time TIME,
+    total_hours VARCHAR(20),
+    status VARCHAR(50), -- 'present', 'full-day', 'half-day', 'late'
     photo_url TEXT,
     location TEXT,
+    work_mode VARCHAR(50),
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

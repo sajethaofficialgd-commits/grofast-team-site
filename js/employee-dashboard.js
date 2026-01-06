@@ -383,9 +383,13 @@ async function initAttendanceSection() {
 }
 
 async function checkTodayAttendance() {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
     const attendance = await getEmployeeAttendance();
-    const today = new Date().toDateString();
-    const todayRecord = attendance.find(a => new Date(a.date).toDateString() === today);
+    const todayRecord = attendance.find(a => {
+        const recordDate = a.date.includes('T') ? a.date.split('T')[0] : a.date;
+        return recordDate === todayStr;
+    });
 
     const statusIcon = document.querySelector('.status-icon');
     const statusText = document.getElementById('attendanceStatusText');
@@ -397,12 +401,6 @@ async function checkTodayAttendance() {
     const timerDiv = document.getElementById('workTimer');
     const modeSelection = document.querySelector('.work-mode-selection');
 
-    const now = new Date();
-    const currentHour = now.getHours();
-
-    // Check if within check-in window
-    const canCheckIn = currentHour >= ATTENDANCE_CONFIG.checkInStart && currentHour < ATTENDANCE_CONFIG.checkInEnd;
-
     if (todayRecord) {
         // Already checked in
         statusIcon.className = 'status-icon marked';
@@ -413,11 +411,11 @@ async function checkTodayAttendance() {
         cameraSection.classList.remove('active');
         infoDiv.style.display = 'block';
 
-        document.getElementById('checkInTime').textContent = todayRecord.checkInTime || todayRecord.time;
+        document.getElementById('checkInTime').textContent = todayRecord.check_in_time || todayRecord.checkInTime || todayRecord.time;
 
         let locationDisplay = todayRecord.location || 'Office';
-        if (todayRecord.workMode) {
-            locationDisplay = `${todayRecord.workMode} (${locationDisplay})`;
+        if (todayRecord.work_mode || todayRecord.workMode) {
+            locationDisplay = `${todayRecord.work_mode || todayRecord.workMode} (${locationDisplay})`;
         }
         document.getElementById('checkInLocation').textContent = locationDisplay;
 
@@ -428,13 +426,13 @@ async function checkTodayAttendance() {
         }
 
         // Check if already checked out
-        if (todayRecord.checkOutTime) {
-            statusText.textContent = `Checked out at ${todayRecord.checkOutTime}`;
+        if (todayRecord.check_out_time || todayRecord.checkOutTime) {
+            statusText.textContent = `Checked out at ${todayRecord.check_out_time || todayRecord.checkOutTime}`;
             checkoutBtn.style.display = 'none';
             timerDiv.style.display = 'none';
 
             // Show total hours
-            document.getElementById('totalHours').textContent = todayRecord.totalHours || '-';
+            document.getElementById('totalHours').textContent = todayRecord.total_hours || todayRecord.totalHours || '-';
             document.getElementById('totalHoursDiv').style.display = 'flex';
         } else {
             statusText.textContent = 'Checked in! Working...';
@@ -664,12 +662,15 @@ async function confirmAttendance() {
 
     const newRecord = {
         employee_id: currentEmployee.id,
-        date: now.toISOString(),
-        check_in_time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        employee_name: currentEmployee.name,
+        date: now.toISOString().split('T')[0],
+        time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        check_in_time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
         status: status,
         location: location,
         work_mode: selectedMode,
-        photo_url: photoUrl
+        photo_url: photoUrl,
+        type: 'check_in'
     };
 
     const result = await saveEmployeeAttendance(newRecord);

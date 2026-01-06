@@ -308,13 +308,18 @@ async function addAttendanceToDB(attendanceData) {
         const { data, error } = await supabaseClient
             .from('attendance')
             .insert([{
-                user_id: attendanceData.userId,
-                user_name: attendanceData.userName,
+                user_id: attendanceData.userId || attendanceData.employee_id,
+                user_name: attendanceData.userName || attendanceData.employee_name,
                 type: attendanceData.type,
                 date: attendanceData.date,
-                time: attendanceData.time,
-                photo_url: attendanceData.photoUrl || null,
+                time: attendanceData.time || attendanceData.check_in_time,
+                check_in_time: attendanceData.check_in_time || attendanceData.time,
+                check_out_time: attendanceData.check_out_time,
+                total_hours: attendanceData.total_hours || attendanceData.totalHours,
+                status: attendanceData.status,
+                photo_url: attendanceData.photoUrl || attendanceData.photo_url || null,
                 location: attendanceData.location || null,
+                work_mode: attendanceData.work_mode || attendanceData.workMode || null,
                 latitude: attendanceData.latitude || null,
                 longitude: attendanceData.longitude || null
             }])
