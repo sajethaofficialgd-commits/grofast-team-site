@@ -180,7 +180,7 @@ function toggleSidebar() {
 async function initDashboardSection() {
     const attendance = await getEmployeeAttendance();
     const work = await getEmployeeWork();
-    const courses = getEmployeeCourses();
+    const courses = await getEmployeeCourses();
     const messages = await getUnreadMessages();
 
     // Update stats
@@ -744,7 +744,7 @@ async function checkOut() {
 }
 
 // Fallback: Mark attendance without photo
-function markAttendanceWithoutPhoto() {
+async function markAttendanceWithoutPhoto() {
     const now = new Date();
     const currentHour = now.getHours();
     const currentTime = currentHour + (now.getMinutes() / 60);
@@ -755,7 +755,7 @@ function markAttendanceWithoutPhoto() {
         return;
     }
 
-    const attendance = getEmployeeAttendance();
+    const attendance = await getEmployeeAttendance();
 
     // Before 10 AM = present, 10:00-10:30 = late
     let status = 'present';
@@ -764,29 +764,29 @@ function markAttendanceWithoutPhoto() {
     }
 
     const newRecord = {
-        id: Date.now(),
-        employeeId: currentEmployee.id,
+        employee_id: currentEmployee.id,
         date: now.toISOString(),
-        checkInTime: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-        time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-        checkOutTime: null,
-        totalHours: null,
+        check_in_time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
         status: status,
         location: 'Office',
-        photo: null
+        work_mode: 'Office',
+        photo_url: null
     };
 
-    attendance.unshift(newRecord);
-    saveEmployeeAttendance(attendance);
+    const result = await saveEmployeeAttendance(newRecord);
 
-    addActivity('login', currentEmployee.name, status === 'late' ? 'Checked in (Late)' : 'Checked in');
+    if (result) {
+        addActivity('login', currentEmployee.name, status === 'late' ? 'Checked in (Late)' : 'Checked in');
 
-    checkTodayAttendance();
-    renderAttendanceHistory();
-    updateAttendanceStats();
-    initDashboardSection();
+        await checkTodayAttendance();
+        await renderAttendanceHistory();
+        await updateAttendanceStats();
+        await initDashboardSection();
 
-    showToast(status === 'late' ? 'Checked in (Late)!' : 'Checked in successfully!', status === 'late' ? 'warning' : 'success');
+        showToast(status === 'late' ? 'Checked in (Late)!' : 'Checked in successfully!', status === 'late' ? 'warning' : 'success');
+    } else {
+        showToast('Failed to save attendance', 'error');
+    }
 }
 
 // Legacy function for quick action button
