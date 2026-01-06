@@ -286,9 +286,16 @@ async function initProfileSection() {
     if (nameEl) nameEl.textContent = currentEmployee.name;
     if (roleEl) roleEl.textContent = `${currentEmployee.role || currentEmployee.position} • ${currentEmployee.department}`;
 
-    const joinDate = currentEmployee.join_date || currentEmployee.joinDate || new Date().toISOString();
+    const joinDate = currentEmployee.join_date || currentEmployee.joinDate || currentEmployee.created_at || new Date().toISOString();
     if (joinDateEl) joinDateEl.textContent = new Date(joinDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
-    if (departmentEl) departmentEl.textContent = currentEmployee.department;
+    if (departmentEl) departmentEl.textContent = currentEmployee.department || 'General';
+
+    // Form fields
+    const bioEl = document.getElementById('editBio');
+    const linkedinEl = document.getElementById('editLinkedin');
+
+    if (bioEl) bioEl.value = currentEmployee.bio || '';
+    if (linkedinEl) linkedinEl.value = currentEmployee.linkedin || '';
 
     document.getElementById('lastActive').textContent = 'Now';
 
@@ -2310,19 +2317,13 @@ function loadProfileData() {
     if (phoneEl && savedProfile.phone) phoneEl.value = savedProfile.phone;
 }
 
-// Initialize profile on load
+// Add hover effect CSS
 document.addEventListener('DOMContentLoaded', function () {
-    setTimeout(() => {
-        loadDashboardProfilePhoto();
-        loadProfileData();
-
-        // Add hover effect CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            .profile-avatar-large:hover .photo-overlay {
-                opacity: 1 !important;
-            }
-        `;
-        document.head.appendChild(style);
-    }, 500);
+    const style = document.createElement('style');
+    style.textContent = `
+        .profile-avatar-large:hover .photo-overlay {
+            opacity: 1 !important;
+        }
+    `;
+    document.head.appendChild(style);
 });
