@@ -324,6 +324,113 @@
                             <div class="chart-legend" id="workModeLegend"></div>
                         </div>
                     </div>
+
+                    <!-- Engagement Row -->
+                    <div class="engagement-row">
+                        <!-- Leaderboard -->
+                        <div class="leaderboard-card glass-card">
+                            <div class="card-header">
+                                <h3><i data-lucide="trophy"></i> Top Performers</h3>
+                                <select id="leaderboardPeriod" class="filter-select-sm" onchange="updateLeaderboard()">
+                                    <option value="week">This Week</option>
+                                    <option value="month">This Month</option>
+                                    <option value="all">All Time</option>
+                                </select>
+                            </div>
+                            <div class="leaderboard-list" id="leaderboardList">
+                                <!-- Leaderboard items rendered by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Achievements & Badges -->
+                        <div class="achievements-card glass-card">
+                            <div class="card-header">
+                                <h3><i data-lucide="award"></i> Your Achievements</h3>
+                            </div>
+                            <div class="badges-grid" id="badgesGrid">
+                                <!-- Badges rendered by JS -->
+                            </div>
+                            <div class="streak-display" id="streakDisplay">
+                                <div class="streak-flame">🔥</div>
+                                <div class="streak-info">
+                                    <span class="streak-count" id="streakCount">0</span>
+                                    <span class="streak-label">Day Streak</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pulse Survey -->
+                        <div class="pulse-survey-card glass-card">
+                            <div class="card-header">
+                                <h3><i data-lucide="heart-pulse"></i> How are you feeling?</h3>
+                            </div>
+                            <div class="mood-selector">
+                                <button class="mood-btn" data-mood="great" onclick="submitMood('great')">
+                                    <span class="mood-emoji">😊</span>
+                                    <span class="mood-label">Great</span>
+                                </button>
+                                <button class="mood-btn" data-mood="good" onclick="submitMood('good')">
+                                    <span class="mood-emoji">🙂</span>
+                                    <span class="mood-label">Good</span>
+                                </button>
+                                <button class="mood-btn" data-mood="okay" onclick="submitMood('okay')">
+                                    <span class="mood-emoji">😐</span>
+                                    <span class="mood-label">Okay</span>
+                                </button>
+                                <button class="mood-btn" data-mood="stressed" onclick="submitMood('stressed')">
+                                    <span class="mood-emoji">😓</span>
+                                    <span class="mood-label">Stressed</span>
+                                </button>
+                            </div>
+                            <div class="mood-history" id="moodHistory">
+                                <!-- Recent moods shown here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export & Announcements Row -->
+                    <div class="export-announce-row">
+                        <!-- Export Options -->
+                        <div class="export-card glass-card">
+                            <div class="card-header">
+                                <h3><i data-lucide="download"></i> Export Data</h3>
+                            </div>
+                            <div class="export-options">
+                                <div class="export-filters">
+                                    <select id="exportType" class="filter-select">
+                                        <option value="attendance">Attendance Records</option>
+                                        <option value="work">Work Updates</option>
+                                        <option value="learning">Learning Progress</option>
+                                        <option value="all">All Data</option>
+                                    </select>
+                                    <div class="date-range-picker">
+                                        <input type="date" id="exportStartDate" class="form-input-sm">
+                                        <span>to</span>
+                                        <input type="date" id="exportEndDate" class="form-input-sm">
+                                    </div>
+                                </div>
+                                <div class="export-buttons">
+                                    <button class="btn btn-secondary" onclick="exportToCSV()">
+                                        <i data-lucide="file-spreadsheet"></i> CSV
+                                    </button>
+                                    <button class="btn btn-primary" onclick="exportToPDF()">
+                                        <i data-lucide="file-text"></i> PDF Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Team Announcements -->
+                        <div class="announcements-card glass-card">
+                            <div class="card-header">
+                                <h3><i data-lucide="megaphone"></i> Announcements</h3>
+                                <span class="announcement-badge" id="unreadAnnouncements">0</span>
+                            </div>
+                            <div class="announcements-list" id="announcementsList">
+                                <!-- Announcements rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 

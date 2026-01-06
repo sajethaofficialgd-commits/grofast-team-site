@@ -223,6 +223,9 @@ async function initDashboardSection() {
 
     // Render analytics charts
     await renderAnalytics();
+
+    // Initialize engagement features (leaderboard, badges, mood, announcements)
+    await initEngagementFeatures();
 }
 
 async function renderTodaySchedule() {
@@ -2933,6 +2936,432 @@ function renderWorkModeChart(attendance) {
 
 function updateAnalytics() {
     renderAnalytics();
+}
+
+// =============================================
+// PHASE 3: LEADERBOARDS & GAMIFICATION
+// =============================================
+
+async function renderLeaderboard() {
+    const container = document.getElementById('leaderboardList');
+    if (!container) return;
+
+    // Get all employees and calculate scores
+    let employees = [];
+    if (typeof getAllEmployees === 'function') {
+        employees = await getAllEmployees();
+    }
+
+    if (employees.length === 0) {
+        // Demo data if no employees
+        employees = [
+            { name: currentEmployee.name, id: currentEmployee.id },
+        ];
+    }
+
+    // Calculate scores based on activity
+    const period = document.getElementById('leaderboardPeriod')?.value || 'week';
+    const daysMap = { week: 7, month: 30, all: 365 };
+    const days = daysMap[period];
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const leaderboardData = await Promise.all(employees.slice(0, 10).map(async (emp) => {
+        let score = 0;
+        if (emp.id === currentEmployee.id) {
+            const attendance = await getEmployeeAttendance();
+            const work = await getEmployeeWork();
+            score = attendance.filter(a => new Date(a.date || a.check_in_time) >= startDate).length * 10 +
+                work.filter(w => new Date(w.created_at || w.date) >= startDate).length * 5;
+        } else {
+            score = Math.floor(Math.random() * 100) + 20; // Demo scores
+        }
+        return { ...emp, score };
+    }));
+
+    leaderboardData.sort((a, b) => b.score - a.score);
+
+    container.innerHTML = leaderboardData.slice(0, 5).map((emp, i) => `
+        <div class="leaderboard-item${i < 3 ? ' rank-' + (i + 1) : ''}">
+            <div class="rank-badge">${i + 1}</div>
+            <div class="leaderboard-avatar">${getInitials(emp.name || 'User')}</div>
+            <div class="leaderboard-info">
+                <div class="leaderboard-name">${emp.name || 'Team Member'}${emp.id === currentEmployee.id ? ' (You)' : ''}</div>
+                <div class="leaderboard-score">${emp.score} pts</div>
+            </div>
+            <div class="leaderboard-points">${i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : '⭐'}</div>
+        </div>
+    `).join('');
+}
+
+function updateLeaderboard() {
+    renderLeaderboard();
+}
+
+async function renderBadges() {
+    const container = document.getElementById('badgesGrid');
+    if (!container) return;
+
+    const attendance = await getEmployeeAttendance();
+    const work = await getEmployeeWork();
+    const streak = calculateStreak(attendance);
+
+    const badges = [
+        { icon: '🚀', name: 'First Day', unlocked: attendance.length >= 1 },
+        { icon: '🔥', name: '7 Day Streak', unlocked: streak >= 7 },
+        { icon: '⚡', name: '30 Day Streak', unlocked: streak >= 30 },
+        { icon: '🎯', name: '10 Tasks', unlocked: work.length >= 10 },
+        { icon: '💪', name: '50 Tasks', unlocked: work.length >= 50 },
+        { icon: '🏆', name: 'Champion', unlocked: work.length >= 100 },
+        { icon: '📚', name: 'Learner', unlocked: true },
+        { icon: '⭐', name: 'Star', unlocked: attendance.length >= 20 }
+    ];
+
+    container.innerHTML = badges.map(b => `
+        <div class="badge-item${b.unlocked ? '' : ' locked'}" title="${b.name}">
+            <span class="badge-icon">${b.icon}</span>
+            <span class="badge-name">${b.name}</span>
+        </div>
+    `).join('');
+
+    // Update streak display
+    const streakCount = document.getElementById('streakCount');
+    if (streakCount) streakCount.textContent = streak;
+}
+
+// =============================================
+// PHASE 5: PULSE SURVEY
+// =============================================
+
+function getMoodHistory() {
+    try {
+        return JSON.parse(localStorage.getItem(`moodHistory_${currentEmployee.id}`) || '[]');
+    } catch {
+        return [];
+    }
+}
+
+function saveMoodHistory(history) {
+    localStorage.setItem(`moodHistory_${currentEmployee.id}`, JSON.stringify(history));
+}
+
+async function submitMood(mood) {
+    const moodEmojis = { great: '😊', good: '🙂', okay: '😐', stressed: '😓' };
+
+    // Update button states
+    document.querySelectorAll('.mood-btn').forEach(btn => {
+        btn.classList.remove('selected');
+        if (btn.dataset.mood === mood) {
+            btn.classList.add('selected');
+        }
+    });
+
+    // Save mood
+    const history = getMoodHistory();
+    history.unshift({
+        mood,
+        emoji: moodEmojis[mood],
+        date: new Date().toISOString()
+    });
+    saveMoodHistory(history.slice(0, 30));
+
+    showToast(`Thanks for sharing! You're feeling ${mood} today.`, 'success');
+    renderMoodHistory();
+}
+
+function renderMoodHistory() {
+    const container = document.getElementById('moodHistory');
+    if (!container) return;
+
+    const history = getMoodHistory().slice(0, 7);
+
+    if (history.length === 0) {
+        container.innerHTML = '<p style="font-size: 12px; color: var(--text-muted); text-align: center;">Share how you feel!</p>';
+        return;
+    }
+
+    container.innerHTML = history.map(h => {
+        const date = new Date(h.date);
+        return `
+            <div class="mood-history-item">
+                <span>${h.emoji}</span>
+                <span>${date.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+            </div>
+        `;
+    }).join('');
+
+    // Mark today's mood as selected
+    const today = new Date().toDateString();
+    const todayMood = history.find(h => new Date(h.date).toDateString() === today);
+    if (todayMood) {
+        document.querySelectorAll('.mood-btn').forEach(btn => {
+            btn.classList.remove('selected');
+            if (btn.dataset.mood === todayMood.mood) {
+                btn.classList.add('selected');
+            }
+        });
+    }
+}
+
+// =============================================
+// PHASE 4: EXPORT FUNCTIONS
+// =============================================
+
+async function exportToCSV() {
+    const exportType = document.getElementById('exportType')?.value || 'all';
+    const startDate = document.getElementById('exportStartDate')?.value;
+    const endDate = document.getElementById('exportEndDate')?.value;
+
+    let data = [];
+    let filename = '';
+
+    showToast('Preparing CSV export...', 'info');
+
+    try {
+        if (exportType === 'attendance' || exportType === 'all') {
+            const attendance = await getEmployeeAttendance();
+            const filtered = filterByDateRange(attendance, startDate, endDate, 'date');
+            data = data.concat(filtered.map(a => ({
+                Type: 'Attendance',
+                Date: a.date || a.check_in_time?.split('T')[0],
+                'Check-in Time': a.check_in_time || '',
+                Status: a.status || 'Present',
+                Location: a.location || ''
+            })));
+        }
+
+        if (exportType === 'work' || exportType === 'all') {
+            const work = await getEmployeeWork();
+            const filtered = filterByDateRange(work, startDate, endDate, 'created_at');
+            data = data.concat(filtered.map(w => ({
+                Type: 'Work Update',
+                Date: w.created_at?.split('T')[0] || w.date,
+                Title: w.title || w.activity || '',
+                Status: w.status || '',
+                Category: w.category || ''
+            })));
+        }
+
+        if (exportType === 'learning' || exportType === 'all') {
+            const courses = await getEmployeeCourses();
+            data = data.concat(courses.map(c => ({
+                Type: 'Learning',
+                Date: c.started_at || '',
+                Title: c.title || c.field || '',
+                Status: c.progress >= 100 ? 'Completed' : 'In Progress',
+                Progress: (c.progress || 0) + '%'
+            })));
+        }
+
+        if (data.length === 0) {
+            showToast('No data to export for the selected criteria', 'warning');
+            return;
+        }
+
+        // Convert to CSV
+        const headers = Object.keys(data[0]);
+        const csvContent = [
+            headers.join(','),
+            ...data.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(','))
+        ].join('\n');
+
+        filename = `grofast_${exportType}_${new Date().toISOString().split('T')[0]}.csv`;
+        downloadFile(csvContent, filename, 'text/csv');
+        showToast('CSV exported successfully!', 'success');
+    } catch (error) {
+        console.error('Export error:', error);
+        showToast('Export failed. Please try again.', 'error');
+    }
+}
+
+async function exportToPDF() {
+    showToast('Generating PDF report...', 'info');
+
+    const attendance = await getEmployeeAttendance();
+    const work = await getEmployeeWork();
+    const startDate = document.getElementById('exportStartDate')?.value;
+    const endDate = document.getElementById('exportEndDate')?.value;
+
+    // Create printable HTML
+    const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Employee Report - ${currentEmployee.name}</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+                h1 { color: #00d4ff; border-bottom: 2px solid #00d4ff; padding-bottom: 10px; }
+                h2 { color: #1a2a4a; margin-top: 30px; }
+                .summary { display: flex; gap: 30px; margin: 20px 0; }
+                .stat { background: #f5f5f5; padding: 20px; border-radius: 10px; text-align: center; }
+                .stat-value { font-size: 2rem; font-weight: bold; color: #00d4ff; }
+                .stat-label { color: #666; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+                th { background: #1a2a4a; color: white; }
+                tr:nth-child(even) { background: #f9f9f9; }
+                .footer { margin-top: 40px; text-align: center; color: #999; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <h1>📊 Grofast Employee Report</h1>
+            <p><strong>Employee:</strong> ${currentEmployee.name}</p>
+            <p><strong>Department:</strong> ${currentEmployee.department || currentEmployee.field || 'General'}</p>
+            <p><strong>Generated:</strong> ${new Date().toLocaleDateString('en-IN', { dateStyle: 'full' })}</p>
+            ${startDate && endDate ? `<p><strong>Period:</strong> ${startDate} to ${endDate}</p>` : ''}
+            
+            <div class="summary">
+                <div class="stat">
+                    <div class="stat-value">${attendance.length}</div>
+                    <div class="stat-label">Days Present</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${work.length}</div>
+                    <div class="stat-label">Tasks Completed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${calculateStreak(attendance)}</div>
+                    <div class="stat-label">Current Streak</div>
+                </div>
+            </div>
+            
+            <h2>Recent Attendance</h2>
+            <table>
+                <tr><th>Date</th><th>Check-in</th><th>Status</th></tr>
+                ${attendance.slice(0, 10).map(a => `
+                    <tr>
+                        <td>${new Date(a.date || a.check_in_time).toLocaleDateString()}</td>
+                        <td>${a.check_in_time || '-'}</td>
+                        <td>${a.status || 'Present'}</td>
+                    </tr>
+                `).join('')}
+            </table>
+            
+            <h2>Recent Work Updates</h2>
+            <table>
+                <tr><th>Date</th><th>Activity</th><th>Status</th></tr>
+                ${work.slice(0, 10).map(w => `
+                    <tr>
+                        <td>${new Date(w.created_at || w.date).toLocaleDateString()}</td>
+                        <td>${w.title || w.activity || ''}</td>
+                        <td>${w.status || ''}</td>
+                    </tr>
+                `).join('')}
+            </table>
+            
+            <div class="footer">
+                <p>Generated by Grofast Digital Team Dashboard</p>
+            </div>
+        </body>
+        </html>
+    `;
+
+    // Open print dialog
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+
+    showToast('PDF ready for printing!', 'success');
+}
+
+function filterByDateRange(data, startDate, endDate, dateField) {
+    if (!startDate && !endDate) return data;
+
+    return data.filter(item => {
+        const itemDate = new Date(item[dateField] || item.date);
+        if (startDate && itemDate < new Date(startDate)) return false;
+        if (endDate && itemDate > new Date(endDate)) return false;
+        return true;
+    });
+}
+
+function downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// =============================================
+// PHASE 5: ANNOUNCEMENTS
+// =============================================
+
+function getAnnouncements() {
+    // Sample announcements (in real app, fetch from API)
+    return [
+        {
+            id: 1,
+            title: 'Welcome to the New Dashboard!',
+            content: 'Check out the new analytics, leaderboards, and export features.',
+            date: new Date().toISOString(),
+            pinned: true
+        },
+        {
+            id: 2,
+            title: 'Team Meeting This Friday',
+            content: 'Weekly sync at 3 PM. Please prepare your updates.',
+            date: new Date(Date.now() - 86400000).toISOString(),
+            pinned: false
+        },
+        {
+            id: 3,
+            title: 'New Learning Modules Available',
+            content: 'Explore new courses in your learning section.',
+            date: new Date(Date.now() - 172800000).toISOString(),
+            pinned: false
+        }
+    ];
+}
+
+function renderAnnouncements() {
+    const container = document.getElementById('announcementsList');
+    const badge = document.getElementById('unreadAnnouncements');
+    if (!container) return;
+
+    const announcements = getAnnouncements();
+
+    if (badge) {
+        badge.textContent = announcements.filter(a => a.pinned).length;
+    }
+
+    if (announcements.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">No announcements</p>';
+        return;
+    }
+
+    container.innerHTML = announcements.map(a => `
+        <div class="announcement-item${a.pinned ? ' pinned' : ''}">
+            <div class="announcement-header">
+                ${a.pinned ? '<i data-lucide="pin" class="announcement-pin" style="width: 14px; height: 14px;"></i>' : ''}
+                <span class="announcement-title">${a.title}</span>
+                <span class="announcement-date">${new Date(a.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
+            </div>
+            <p class="announcement-content">${a.content}</p>
+        </div>
+    `).join('');
+
+    lucide.createIcons();
+}
+
+// Initialize engagement features
+async function initEngagementFeatures() {
+    await renderLeaderboard();
+    await renderBadges();
+    renderMoodHistory();
+    renderAnnouncements();
+
+    // Set default export dates
+    const today = new Date().toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDateEl = document.getElementById('exportStartDate');
+    const endDateEl = document.getElementById('exportEndDate');
+    if (startDateEl) startDateEl.value = thirtyDaysAgo;
+    if (endDateEl) endDateEl.value = today;
 }
 
 // =============================================
