@@ -176,8 +176,7 @@
             if (!employee && typeof DEMO_USERS !== 'undefined') {
                 const demoUser = DEMO_USERS.find(user =>
                     user.email.toLowerCase() === email.toLowerCase() &&
-                    user.password === password &&
-                    user.role !== 'admin'
+                    user.password === password
                 );
                 if (demoUser) {
                     employee = {
