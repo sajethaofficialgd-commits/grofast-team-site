@@ -72,14 +72,24 @@ async function initDashboard() {
     const nameEl = document.getElementById('sidebarName');
     const roleEl = document.getElementById('sidebarRole');
 
-    if (avatarEl) avatarEl.textContent = getInitials(currentEmployee.name);
+    if (avatarEl) avatarEl.textContent = getInitials(currentEmployee.name || 'User');
     if (nameEl) nameEl.textContent = currentEmployee.name;
     if (roleEl) roleEl.textContent = currentEmployee.role || currentEmployee.position;
 
     // Handle profile photo for sidebar if it exists
-    if (currentEmployee.profile_photo || currentEmployee.photo) {
-        const sidebarAvatarContainer = avatarEl.parentElement;
-        sidebarAvatarContainer.innerHTML = `<img src="${currentEmployee.profile_photo || currentEmployee.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+    const photoUrl = currentEmployee.profile_photo || currentEmployee.photo;
+    if (photoUrl && avatarEl) {
+        avatarEl.innerHTML = `<img src="${photoUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        avatarEl.style.background = 'transparent';
+    }
+
+    // Update header avatar too
+    const headerAvatar = document.querySelector('.header-avatar');
+    if (headerAvatar && photoUrl) {
+        headerAvatar.innerHTML = `<img src="${photoUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        headerAvatar.style.background = 'transparent';
+    } else if (headerAvatar) {
+        headerAvatar.textContent = getInitials(currentEmployee.name || 'User');
     }
 
     // Setup navigation
@@ -2277,33 +2287,29 @@ async function handleDashboardPhotoUpload(input) {
 function displayDashboardPhoto(base64) {
     if (!base64) return;
 
-    // 1. Profile Page / Main Area components
-    const dashboardPhoto = document.getElementById('dashboardProfilePhoto');
-    const avatarInitials = document.getElementById('avatarInitials');
-    if (dashboardPhoto) {
-        dashboardPhoto.src = base64;
-        dashboardPhoto.style.display = 'block';
-        if (avatarInitials) avatarInitials.style.display = 'none';
-    }
-
-    // 2. Sidebar Avatar
+    // 1. Sidebar Avatar
     const sidebarAvatar = document.getElementById('sidebarAvatar');
     if (sidebarAvatar) {
         sidebarAvatar.innerHTML = `<img src="${base64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
         sidebarAvatar.style.background = 'transparent';
     }
 
-    // 3. Header Avatar
+    // 2. Header Avatar
     const headerAvatar = document.querySelector('.header-avatar');
     if (headerAvatar) {
         headerAvatar.innerHTML = `<img src="${base64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
         headerAvatar.style.background = 'transparent';
     }
 
-    // 4. Profile Section Large Avatar
-    const profileAvatar = document.getElementById('profileAvatar');
-    if (profileAvatar) {
-        profileAvatar.innerHTML = `<img src="${base64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    // 3. Profile Page Components
+    const largeImg = document.getElementById('dashboardProfilePhoto');
+    const initialsSpan = document.getElementById('avatarInitials');
+    if (largeImg) {
+        largeImg.src = base64;
+        largeImg.style.display = 'block';
+    }
+    if (initialsSpan) {
+        initialsSpan.style.display = 'none';
     }
 }
 
