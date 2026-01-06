@@ -274,16 +274,20 @@ async function getAttendanceFromDB(filters = {}) {
         let query = supabaseClient.from('attendance').select('*');
 
         if (filters.userId) {
-            // Ensure userId is a number for the BIGINT column
-            query = query.eq('user_id', Number(filters.userId));
+            const uid = Number(filters.userId);
+            if (isNaN(uid)) {
+                console.warn('⚠️ getAttendanceFromDB: userId is invalid', filters.userId);
+                return [];
+            }
+            query = query.eq('user_id', uid);
         }
 
-        // Order by date and then time to ensure correct history sequence
         const { data, error } = await query
             .order('date', { ascending: false })
             .order('created_at', { ascending: false });
 
         if (error) throw error;
+        console.log(`📊 getAttendanceFromDB: Retrieved ${data?.length || 0} records for user ${filters.userId}`);
         return data || [];
     } catch (err) {
         console.error('DB Error:', err);
