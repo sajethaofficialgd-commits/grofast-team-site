@@ -2061,6 +2061,14 @@
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+/* Calendar Days Grid - where day cells are rendered */
+.calendar-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--space-2);
 }
 
 .calendar-days-container {

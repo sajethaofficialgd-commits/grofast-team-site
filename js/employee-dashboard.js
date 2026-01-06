@@ -1780,24 +1780,24 @@ function setCalendarView(view) {
     lucide.createIcons();
 }
 
-function goToToday() {
+async function goToToday() {
     currentMonth = new Date().getMonth();
     currentYear = new Date().getFullYear();
-    renderCalendar();
-    renderWeekView();
-    renderAgendaView();
-    renderWorkloadHeatmap();
+    await renderCalendar();
+    await renderWeekView();
+    await renderAgendaView();
+    await renderWorkloadHeatmap();
 }
 
-function filterCalendarEvents() {
+async function filterCalendarEvents() {
     currentEventFilter = document.getElementById('eventTypeFilter')?.value || 'all';
-    renderCalendar();
-    renderEvents();
-    renderWeekView();
-    renderAgendaView();
+    await renderCalendar();
+    await renderEvents();
+    await renderWeekView();
+    await renderAgendaView();
 }
 
-function renderCalendar() {
+async function renderCalendar() {
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const calendarMonth = document.getElementById('calendarMonth');
     if (calendarMonth) {
@@ -1808,7 +1808,9 @@ function renderCalendar() {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const today = new Date();
 
-    const events = getEmployeeEvents().filter(e => {
+    // Await the events - this was the bug!
+    const allEvents = await getEmployeeEvents();
+    const events = allEvents.filter(e => {
         if (currentEventFilter === 'all') return true;
         return (e.type || 'personal') === currentEventFilter;
     });
@@ -1827,16 +1829,20 @@ function renderCalendar() {
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(currentYear, currentMonth, day);
-        const dateStr = date.toDateString();
-        const isToday = dateStr === today.toDateString();
+        const dateStr = date.toISOString().split('T')[0]; // Use ISO format for consistent comparison
+        const isToday = date.toDateString() === today.toDateString();
 
-        const dayEvents = events.filter(e => new Date(e.date).toDateString() === dateStr);
+        // Match events by date string
+        const dayEvents = events.filter(e => {
+            const eventDate = e.date?.split('T')[0] || e.date;
+            return eventDate === dateStr;
+        });
         const intensity = Math.min(dayEvents.length, 5);
 
         let eventDots = '';
         dayEvents.slice(0, 3).forEach(e => {
             const type = e.type || 'personal';
-            eventDots += `<div class="event-dot ${type}"></div>`;
+            eventDots += `<div class="event-dot ${type}" title="${e.title}"></div>`;
         });
         if (dayEvents.length > 3) {
             eventDots += `<div style="font-size: 9px; color: var(--text-muted);">+${dayEvents.length - 3}</div>`;
@@ -1844,7 +1850,7 @@ function renderCalendar() {
 
         html += `
             <div class="cal-day-enhanced${isToday ? ' today' : ''}${intensity > 0 ? ' intensity-' + intensity : ''}" 
-                 onclick="selectDate(${day})">
+                 onclick="selectDate(${day})" data-date="${dateStr}">
                 <span class="day-number">${day}</span>
                 <div class="day-events">${eventDots}</div>
             </div>
@@ -1864,12 +1870,13 @@ function renderCalendar() {
     renderWorkloadHeatmap();
 }
 
-function renderWeekView() {
+async function renderWeekView() {
     const weekHeader = document.getElementById('weekHeader');
     const weekGrid = document.getElementById('weekGrid');
     if (!weekHeader || !weekGrid) return;
 
-    const events = getEmployeeEvents().filter(e => {
+    const allEvents = await getEmployeeEvents();
+    const events = allEvents.filter(e => {
         if (currentEventFilter === 'all') return true;
         return (e.type || 'personal') === currentEventFilter;
     });
@@ -1924,11 +1931,12 @@ function renderWeekView() {
     weekGrid.innerHTML = gridHtml;
 }
 
-function renderAgendaView() {
+async function renderAgendaView() {
     const agendaList = document.getElementById('agendaList');
     if (!agendaList) return;
 
-    const events = getEmployeeEvents()
+    const allEvents = await getEmployeeEvents();
+    const events = allEvents
         .filter(e => {
             if (currentEventFilter === 'all') return true;
             return (e.type || 'personal') === currentEventFilter;
@@ -1987,11 +1995,11 @@ function renderAgendaView() {
     agendaList.innerHTML = html;
 }
 
-function renderWorkloadHeatmap() {
+async function renderWorkloadHeatmap() {
     const container = document.getElementById('workloadHeatmap');
     if (!container) return;
 
-    const events = getEmployeeEvents();
+    const events = await getEmployeeEvents();
     const today = new Date();
 
     // Show last 4 weeks
@@ -2014,11 +2022,12 @@ function renderWorkloadHeatmap() {
     container.innerHTML = html;
 }
 
-function renderEvents() {
+async function renderEvents() {
     const container = document.getElementById('eventsList');
     if (!container) return;
 
-    const events = getEmployeeEvents()
+    const allEvents = await getEmployeeEvents();
+    const events = allEvents
         .filter(e => {
             if (currentEventFilter === 'all') return true;
             return (e.type || 'personal') === currentEventFilter;
