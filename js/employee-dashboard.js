@@ -220,6 +220,9 @@ async function initDashboardSection() {
 
     // Render team activity
     renderTeamActivity();
+
+    // Render analytics charts
+    await renderAnalytics();
 }
 
 async function renderTodaySchedule() {
@@ -2262,6 +2265,359 @@ function showToast(message, type = 'info') {
     setTimeout(() => {
         toast.remove();
     }, 4000);
+}
+
+// =============================================
+// ANALYTICS SECTION
+// =============================================
+
+let analyticsCharts = {};
+
+async function renderAnalytics() {
+    const days = parseInt(document.getElementById('analyticsRange')?.value || 7);
+    const attendance = await getEmployeeAttendance();
+    const work = await getEmployeeWork();
+
+    // Calculate KPIs
+    await calculateKPIs(attendance, work, days);
+
+    // Render Charts
+    renderAttendanceTrendChart(attendance, days);
+    renderTaskCompletionChart(work);
+    renderWeeklyProductivityChart(work);
+    renderWorkModeChart(attendance);
+
+    lucide.createIcons();
+}
+
+async function calculateKPIs(attendance, work, days) {
+    const now = new Date();
+    const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    // Filter data by date range
+    const recentAttendance = attendance.filter(a => new Date(a.date || a.check_in_time) >= startDate);
+    const recentWork = work.filter(w => new Date(w.created_at || w.date) >= startDate);
+
+    // Attendance Rate
+    const workDays = Math.min(days, getDaysWithoutWeekends(startDate, now));
+    const attendanceRate = workDays > 0 ? Math.round((recentAttendance.length / workDays) * 100) : 0;
+    document.getElementById('kpiAttendanceRate').textContent = attendanceRate + '%';
+
+    // Task Completion Rate
+    const completedTasks = recentWork.filter(w => w.status === 'completed').length;
+    const totalTasks = recentWork.length;
+    const taskRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    document.getElementById('kpiTaskCompletion').textContent = taskRate + '%';
+
+    // Streak calculation
+    const streak = calculateStreak(attendance);
+    document.getElementById('kpiStreak').textContent = streak;
+    document.getElementById('kpiStreakLabel').innerHTML = `<i data-lucide="zap"></i> ${streak === 1 ? 'day' : 'days'}`;
+
+    // Average Check-in Time
+    const avgTime = calculateAverageCheckIn(recentAttendance);
+    document.getElementById('kpiAvgCheckIn').textContent = avgTime;
+
+    // Update trend indicators
+    updateTrendIndicators(attendanceRate, taskRate);
+}
+
+function getDaysWithoutWeekends(start, end) {
+    let count = 0;
+    const current = new Date(start);
+    while (current <= end) {
+        const day = current.getDay();
+        if (day !== 0 && day !== 6) count++;
+        current.setDate(current.getDate() + 1);
+    }
+    return count;
+}
+
+function calculateStreak(attendance) {
+    if (attendance.length === 0) return 0;
+
+    const sortedDates = attendance
+        .map(a => new Date(a.date || a.check_in_time).toDateString())
+        .filter((v, i, arr) => arr.indexOf(v) === i)
+        .sort((a, b) => new Date(b) - new Date(a));
+
+    let streak = 0;
+    const today = new Date();
+    let checkDate = new Date(today);
+
+    for (let i = 0; i < 365; i++) {
+        const dateStr = checkDate.toDateString();
+        if (sortedDates.includes(dateStr)) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else if (checkDate.getDay() === 0 || checkDate.getDay() === 6) {
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+    return streak;
+}
+
+function calculateAverageCheckIn(attendance) {
+    if (attendance.length === 0) return '--:--';
+
+    const times = attendance.map(a => {
+        const timeStr = a.check_in_time || '';
+        const match = timeStr.match(/(\d{1,2}):(\d{2})/);
+        if (match) {
+            return parseInt(match[1]) * 60 + parseInt(match[2]);
+        }
+        return null;
+    }).filter(t => t !== null);
+
+    if (times.length === 0) return '--:--';
+
+    const avgMinutes = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+    const hours = Math.floor(avgMinutes / 60);
+    const mins = avgMinutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+}
+
+function updateTrendIndicators(attendanceRate, taskRate) {
+    const attTrend = document.getElementById('kpiAttendanceTrend');
+    const taskTrend = document.getElementById('kpiTaskTrend');
+
+    if (attendanceRate >= 80) {
+        attTrend.className = 'kpi-trend positive';
+        attTrend.innerHTML = '<i data-lucide="trending-up"></i> Great!';
+    } else if (attendanceRate >= 60) {
+        attTrend.className = 'kpi-trend';
+        attTrend.innerHTML = '<i data-lucide="minus"></i> Average';
+    } else {
+        attTrend.className = 'kpi-trend negative';
+        attTrend.innerHTML = '<i data-lucide="trending-down"></i> Improve';
+    }
+
+    if (taskRate >= 80) {
+        taskTrend.className = 'kpi-trend positive';
+        taskTrend.innerHTML = '<i data-lucide="trending-up"></i> Excellent';
+    } else if (taskRate >= 50) {
+        taskTrend.className = 'kpi-trend';
+        taskTrend.innerHTML = '<i data-lucide="minus"></i> On Track';
+    } else {
+        taskTrend.className = 'kpi-trend negative';
+        taskTrend.innerHTML = '<i data-lucide="trending-down"></i> Behind';
+    }
+}
+
+function renderAttendanceTrendChart(attendance, days) {
+    const ctx = document.getElementById('attendanceTrendChart');
+    if (!ctx) return;
+
+    // Destroy existing chart
+    if (analyticsCharts.attendance) {
+        analyticsCharts.attendance.destroy();
+    }
+
+    // Prepare data for last N days
+    const labels = [];
+    const data = [];
+    const now = new Date();
+
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }));
+
+        const dateStr = date.toDateString();
+        const present = attendance.some(a => new Date(a.date || a.check_in_time).toDateString() === dateStr);
+        data.push(present ? 1 : 0);
+    }
+
+    analyticsCharts.attendance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Attendance',
+                data,
+                borderColor: '#00d4ff',
+                backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#00d4ff',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1,
+                    ticks: {
+                        stepSize: 1,
+                        callback: value => value === 1 ? 'Present' : 'Absent',
+                        color: 'rgba(255,255,255,0.5)'
+                    },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                },
+                x: {
+                    ticks: { color: 'rgba(255,255,255,0.5)', maxRotation: 45 },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+function renderTaskCompletionChart(work) {
+    const ctx = document.getElementById('taskCompletionChart');
+    if (!ctx) return;
+
+    if (analyticsCharts.tasks) {
+        analyticsCharts.tasks.destroy();
+    }
+
+    const completed = work.filter(w => w.status === 'completed').length;
+    const active = work.filter(w => w.status === 'active').length;
+    const pending = work.filter(w => w.status === 'pending' || !w.status).length;
+    const total = completed + active + pending;
+
+    document.getElementById('totalTasks').textContent = total;
+
+    analyticsCharts.tasks = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'Active', 'Pending'],
+            datasets: [{
+                data: [completed, active, pending],
+                backgroundColor: ['#10b981', '#00d4ff', '#f59e0b'],
+                borderColor: 'rgba(26, 42, 74, 0.8)',
+                borderWidth: 3,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: 'rgba(255,255,255,0.7)',
+                        padding: 15,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderWeeklyProductivityChart(work) {
+    const ctx = document.getElementById('weeklyProductivityChart');
+    if (!ctx) return;
+
+    if (analyticsCharts.productivity) {
+        analyticsCharts.productivity.destroy();
+    }
+
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+
+    work.forEach(w => {
+        const day = new Date(w.created_at || w.date).getDay();
+        counts[day]++;
+    });
+
+    analyticsCharts.productivity = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: daysOfWeek,
+            datasets: [{
+                label: 'Tasks',
+                data: counts,
+                backgroundColor: [
+                    'rgba(139, 92, 246, 0.7)',
+                    'rgba(0, 212, 255, 0.7)',
+                    'rgba(0, 212, 255, 0.7)',
+                    'rgba(0, 212, 255, 0.7)',
+                    'rgba(0, 212, 255, 0.7)',
+                    'rgba(0, 212, 255, 0.7)',
+                    'rgba(139, 92, 246, 0.7)'
+                ],
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: 'rgba(255,255,255,0.5)', stepSize: 1 },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                },
+                x: {
+                    ticks: { color: 'rgba(255,255,255,0.5)' },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+function renderWorkModeChart(attendance) {
+    const ctx = document.getElementById('workModeChart');
+    if (!ctx) return;
+
+    if (analyticsCharts.workMode) {
+        analyticsCharts.workMode.destroy();
+    }
+
+    const office = attendance.filter(a => a.work_mode === 'Office' || a.location?.includes('Office')).length;
+    const wfh = attendance.filter(a => a.work_mode === 'WFH' || a.work_mode === 'Remote').length;
+    const other = attendance.length - office - wfh;
+
+    analyticsCharts.workMode = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Office', 'Work From Home', 'Other'],
+            datasets: [{
+                data: [office || 1, wfh, other],
+                backgroundColor: ['#00d4ff', '#8b5cf6', '#f59e0b'],
+                borderColor: 'rgba(26, 42, 74, 0.8)',
+                borderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: 'rgba(255,255,255,0.7)',
+                        padding: 15,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateAnalytics() {
+    renderAnalytics();
 }
 
 // =============================================
