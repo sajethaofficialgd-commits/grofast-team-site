@@ -456,22 +456,47 @@ async function addAttendanceToDB(attendanceData) {
 
 // Get work updates
 async function getWorkUpdatesFromDB(filters = {}) {
+    // Helper to normalize records
+    const normalizeRecord = (r) => ({
+        ...r,
+        userId: r.userId || r.user_id || r.employee_id,
+        user_id: r.user_id || r.userId || r.employee_id,
+        userName: r.userName || r.user_name || r.employee_name,
+        user_name: r.user_name || r.userName || r.employee_name,
+        startTime: r.startTime || r.start_time,
+        start_time: r.start_time || r.startTime,
+        endTime: r.endTime || r.end_time,
+        end_time: r.end_time || r.endTime,
+        timestamp: r.timestamp || r.created_at || new Date().toISOString()
+    });
+
+    // Get from localStorage first
+    let localUpdates = JSON.parse(localStorage.getItem('gf_work_updates') || '[]');
+    localUpdates = localUpdates.map(normalizeRecord);
+
+    if (filters.userId) {
+        const uid = String(filters.userId);
+        localUpdates = localUpdates.filter(u =>
+            String(u.userId) === uid || String(u.user_id) === uid || String(u.employee_id) === uid
+        );
+    }
+    if (filters.date) {
+        localUpdates = localUpdates.filter(u => u.date === filters.date);
+    }
+
     if (!supabaseClient) {
-        let updates = JSON.parse(localStorage.getItem('gf_work_updates') || '[]');
-        if (filters.userId) {
-            updates = updates.filter(u => u.userId == filters.userId);
-        }
-        if (filters.date) {
-            updates = updates.filter(u => u.date === filters.date);
-        }
-        return updates;
+        console.log(`📊 getWorkUpdatesFromDB (local): ${localUpdates.length} records`);
+        return localUpdates;
     }
 
     try {
         let query = supabaseClient.from('work_updates').select('*');
 
         if (filters.userId) {
-            query = query.eq('user_id', filters.userId);
+            const uid = Number(filters.userId);
+            if (!isNaN(uid)) {
+                query = query.eq('user_id', uid);
+            }
         }
         if (filters.date) {
             query = query.eq('date', filters.date);
@@ -480,38 +505,70 @@ async function getWorkUpdatesFromDB(filters = {}) {
         const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
-        return data || [];
+
+        const supabaseUpdates = (data || []).map(normalizeRecord);
+        console.log(`📊 getWorkUpdatesFromDB (cloud): ${supabaseUpdates.length} records`);
+
+        if (supabaseUpdates.length > 0) {
+            return supabaseUpdates;
+        }
+
+        return localUpdates;
     } catch (err) {
-        console.error('DB Error:', err);
-        return [];
+        console.error('DB Error (falling back to local):', err);
+        return localUpdates;
     }
 }
 
 // Add work update
 async function addWorkUpdateToDB(updateData) {
-    if (!supabaseClient) {
+    // Normalize field names
+    const userId = updateData.userId || updateData.employee_id || updateData.user_id;
+    const userName = updateData.userName || updateData.employee_name || updateData.user_name || '';
+    const startTime = updateData.startTime || updateData.start_time;
+    const endTime = updateData.endTime || updateData.end_time;
+
+    const normalizedUpdate = {
+        ...updateData,
+        userId: userId,
+        user_id: userId,
+        userName: userName,
+        user_name: userName,
+        startTime: startTime,
+        start_time: startTime,
+        endTime: endTime,
+        end_time: endTime,
+        timestamp: new Date().toISOString()
+    };
+
+    // Helper to save to localStorage
+    const saveToLocal = (data) => {
         const updates = JSON.parse(localStorage.getItem('gf_work_updates') || '[]');
+        updates.unshift(data);
+        localStorage.setItem('gf_work_updates', JSON.stringify(updates.slice(0, 200)));
+        console.log('📝 Saved work update to localStorage:', data);
+        return data;
+    };
+
+    if (!supabaseClient) {
         const newUpdate = {
             id: Date.now().toString(),
-            ...updateData,
-            timestamp: new Date().toISOString()
+            ...normalizedUpdate
         };
-        updates.push(newUpdate);
-        localStorage.setItem('gf_work_updates', JSON.stringify(updates));
-        return newUpdate;
+        return saveToLocal(newUpdate);
     }
 
     try {
         const { data, error } = await supabaseClient
             .from('work_updates')
             .insert([{
-                user_id: updateData.userId,
-                user_name: updateData.userName,
+                user_id: userId,
+                user_name: userName,
                 date: updateData.date,
-                start_time: updateData.startTime,
-                end_time: updateData.endTime,
+                start_time: startTime,
+                end_time: endTime,
                 activity: updateData.activity,
-                category: updateData.category,
+                category: updateData.category || '',
                 status: updateData.status || 'completed'
             }])
             .select()
@@ -521,15 +578,24 @@ async function addWorkUpdateToDB(updateData) {
 
         // Backup to Google Sheets via n8n
         callN8NWebhook('workUpdate', {
-            ...updateData,
+            ...normalizedUpdate,
             db_id: data.id,
             source: 'dashboard'
         });
 
+        // Also save to local for instant display
+        const localData = { ...normalizedUpdate, id: data.id };
+        saveToLocal(localData);
+
         return data;
     } catch (err) {
-        console.error('DB Error:', err);
-        return null;
+        console.error('DB Error (falling back to local):', err);
+        // Fallback: save to localStorage even when Supabase fails
+        const localUpdate = {
+            id: 'local_' + Date.now().toString(),
+            ...normalizedUpdate
+        };
+        return saveToLocal(localUpdate);
     }
 }
 

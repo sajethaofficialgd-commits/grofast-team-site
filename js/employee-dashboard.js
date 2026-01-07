@@ -997,10 +997,18 @@ async function addTimeSlot() {
     lucide.createIcons();
 
     const newUpdate = {
+        // Include all naming conventions
         employee_id: currentEmployee.id,
+        userId: currentEmployee.id,
+        user_id: currentEmployee.id,
+        employee_name: currentEmployee.name,
+        userName: currentEmployee.name,
+        user_name: currentEmployee.name,
         date: new Date().toISOString().split('T')[0],
         start_time: startTime.toString(),
+        startTime: startTime.toString(),
         end_time: endTime.toString(),
+        endTime: endTime.toString(),
         activity: activity,
         client: client,
         video_mins: videoMins,
