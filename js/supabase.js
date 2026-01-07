@@ -799,48 +799,71 @@ async function updateLearningProgressInDB(userId, moduleId, updates) {
 
 // Get learning logs
 async function getLearningLogsFromDB(userId) {
+    // Get from localStorage first
+    let localLogs = JSON.parse(localStorage.getItem(`learning_logs_${userId}`) || '[]');
+
     if (!supabaseClient) {
-        return JSON.parse(localStorage.getItem(`learning_logs_${userId}`) || '[]');
+        console.log(`📚 getLearningLogsFromDB (local): ${localLogs.length} logs`);
+        return localLogs;
     }
 
     try {
         const { data, error } = await supabaseClient
             .from('learning_logs')
             .select('*')
-            .eq('user_id', userId)
+            .eq('user_id', Number(userId))
             .order('date', { ascending: false });
 
         if (error) throw error;
-        return data || [];
+
+        console.log(`📚 getLearningLogsFromDB (cloud): ${(data || []).length} logs`);
+
+        if (data && data.length > 0) {
+            return data;
+        }
+
+        return localLogs;
     } catch (err) {
-        console.error('DB Error:', err);
-        return [];
+        console.error('DB Error (falling back to local):', err);
+        return localLogs;
     }
 }
 
 // Add learning log
 async function addLearningLogToDB(logData) {
+    const userId = logData.userId || logData.user_id || logData.employee_id;
+
+    // Helper to save to localStorage
+    const saveToLocal = (data) => {
+        const logs = JSON.parse(localStorage.getItem(`learning_logs_${userId}`) || '[]');
+        logs.unshift(data);
+        localStorage.setItem(`learning_logs_${userId}`, JSON.stringify(logs.slice(0, 100)));
+        console.log('📚 Saved learning log to localStorage:', data);
+        return data;
+    };
+
     if (!supabaseClient) {
-        const logs = JSON.parse(localStorage.getItem(`learning_logs_${logData.userId}`) || '[]');
         const newLog = {
             id: Date.now().toString(),
             ...logData,
+            user_id: userId,
+            userId: userId,
+            start_time: logData.startTime || logData.start_time,
+            end_time: logData.endTime || logData.end_time,
             created_at: new Date().toISOString()
         };
-        logs.push(newLog);
-        localStorage.setItem(`learning_logs_${logData.userId}`, JSON.stringify(logs));
-        return newLog;
+        return saveToLocal(newLog);
     }
 
     try {
         const { data, error } = await supabaseClient
             .from('learning_logs')
             .insert([{
-                user_id: logData.userId,
+                user_id: userId,
                 date: logData.date,
                 topic: logData.topic,
-                start_time: logData.startTime,
-                end_time: logData.endTime
+                start_time: logData.startTime || logData.start_time,
+                end_time: logData.endTime || logData.end_time
             }])
             .select()
             .single();
@@ -854,10 +877,23 @@ async function addLearningLogToDB(logData) {
             source: 'dashboard'
         });
 
+        // Also save to localStorage for instant display
+        saveToLocal({ ...data, userId: userId });
+
         return data;
     } catch (err) {
-        console.error('DB Error:', err);
-        return null;
+        console.error('DB Error (falling back to local):', err);
+        // Fallback to localStorage
+        const localLog = {
+            id: 'local_' + Date.now().toString(),
+            ...logData,
+            user_id: userId,
+            userId: userId,
+            start_time: logData.startTime || logData.start_time,
+            end_time: logData.endTime || logData.end_time,
+            created_at: new Date().toISOString()
+        };
+        return saveToLocal(localLog);
     }
 }
 
