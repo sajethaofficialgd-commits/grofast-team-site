@@ -16,7 +16,7 @@ const N8N_WEBHOOKS = {
 const APP_CONFIG = {
     name: 'Grofast Digital',
     version: '1.0.0',
-    debug: true,
+    debug: false,
     session: { timeout: 8 * 60 * 60 * 1000, rememberMeDuration: 30 * 24 * 60 * 60 * 1000 },
     attendance: { mobileOnly: true, requirePhoto: true, requireLocation: true, photoQuality: 0.8 },
     learningStatuses: { NOT_STARTED: 'not_started', IN_PROGRESS: 'in_progress', COMPLETED: 'completed' }

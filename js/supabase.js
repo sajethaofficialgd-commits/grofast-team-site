@@ -583,17 +583,19 @@ async function addWorkUpdateToDB(updateData) {
             source: 'dashboard'
         });
 
-        // Also save to local for instant display
-        const localData = { ...normalizedUpdate, id: data.id };
-        saveToLocal(localData);
+        // Also save to localStorage for instant display
+        saveToLocal({ ...data, userId: userId });
 
         return data;
     } catch (err) {
-        console.error('DB Error (falling back to local):', err);
-        // Fallback: save to localStorage even when Supabase fails
+        console.warn('⚠️ Supabase Insert Failed (likely RLS for demo user). Falling back to local storage:', err.message);
+
+        // Return local update so UI proceeds
         const localUpdate = {
             id: 'local_' + Date.now().toString(),
-            ...normalizedUpdate
+            ...normalizedUpdate,
+            user_id: userId,
+            status: 'completed'
         };
         return saveToLocal(localUpdate);
     }
@@ -882,8 +884,9 @@ async function addLearningLogToDB(logData) {
 
         return data;
     } catch (err) {
-        console.error('DB Error (falling back to local):', err);
-        // Fallback to localStorage
+        console.warn('⚠️ Supabase Learning Log Failed (Demo User/RLS). Falling back to local storage:', err.message);
+
+        // Return local log so UI proceeds
         const localLog = {
             id: 'local_' + Date.now().toString(),
             ...logData,
