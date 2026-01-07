@@ -105,15 +105,19 @@
     <!-- Toast Container -->
     <div id="toastContainer" class="toast-container"></div>
 
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
 
-        // Admin Credentials
-        const ADMIN_CREDENTIALS = {
-            username: 'grofastdigital@gmail.com',
-            password: 'Grofast@123'
-        };
+        // Check for existing session
+        if (auth.isAuthenticated() && auth.isAdmin()) {
+            window.location.href = 'dashboard.html';
+        }
 
         // Toggle password visibility
         function togglePassword() {
@@ -131,36 +135,44 @@
         }
 
         // Form submission
-        document.getElementById('adminLoginForm').addEventListener('submit', function (e) {
+        document.getElementById('adminLoginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
             const errorMessage = document.getElementById('errorMessage');
+            const btn = this.querySelector('button[type="submit"]');
 
-            console.log('Login attempt:', username);
+            // UI Feedback
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> <span>Authenticating...</span>';
+            lucide.createIcons();
+            errorMessage.classList.add('hidden');
 
-            // Validate credentials (case-insensitive for email)
-            const isValidUser = username.toLowerCase() === ADMIN_CREDENTIALS.username.toLowerCase();
-            const isValidPass = password === ADMIN_CREDENTIALS.password;
+            try {
+                // Use the global AuthManager instance
+                const user = await auth.login(username, password, rememberMe);
 
-            console.log('Valid user:', isValidUser, 'Valid pass:', isValidPass);
-
-            if (isValidUser && isValidPass) {
-                // Store session
-                sessionStorage.setItem('adminLoggedIn', 'true');
-                sessionStorage.setItem('adminUser', username);
-
-                // Redirect to dashboard
-                showToast('Login successful!', 'success');
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1000);
-            } else {
+                if (user && user.role === 'admin') {
+                    showToast('Welcome Back, Admin!', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                } else {
+                    // Not an admin
+                    errorMessage.querySelector('span').textContent = 'Access Denied: Admin role required';
+                    errorMessage.classList.remove('hidden');
+                    auth.logout(); // Clean up session
+                }
+            } catch (err) {
+                console.error('Login Error:', err);
+                errorMessage.querySelector('span').textContent = err.message || 'Invalid username or password';
                 errorMessage.classList.remove('hidden');
-                setTimeout(() => {
-                    errorMessage.classList.add('hidden');
-                }, 3000);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="log-in"></i> <span>Sign In</span>';
+                lucide.createIcons();
             }
         });
 
