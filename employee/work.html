@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Work Updates - Grofast Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/employee-dashboard.css">
+    <style>
+        .work-container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .work-form {
+            background: rgba(26, 79, 208, 0.05);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(26, 79, 208, 0.1);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(26, 79, 208, 0.15);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        .form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .char-count {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .char-count.warning {
+            color: #f59e0b;
+        }
+
+        .char-count.error {
+            color: #ef4444;
+        }
+
+        .char-count.success {
+            color: #10b981;
+        }
+
+        .status-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .status-radio {
+            position: relative;
+        }
+
+        .status-radio input {
+            display: none;
+        }
+
+        .status-radio label {
+            display: block;
+            padding: 12px;
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(26, 79, 208, 0.05);
+            margin: 0;
+        }
+
+        .status-radio input:checked+label {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .status-radio input[value="on-track"]+label {
+            color: #10b981;
+        }
+
+        .status-radio input[value="at-risk"]+label {
+            color: #f59e0b;
+        }
+
+        .status-radio input[value="blocked"]+label {
+            color: #ef4444;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #1a4fd0, #00d4ff);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .updates-section {
+            background: rgba(26, 79, 208, 0.05);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            border-radius: 16px;
+            padding: 25px;
+        }
+
+        .updates-section h3 {
+            color: #00d4ff;
+            margin: 0 0 20px 0;
+        }
+
+        .update-card {
+            background: rgba(26, 79, 208, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .update-card:hover {
+            background: rgba(26, 79, 208, 0.15);
+            border-color: rgba(0, 212, 255, 0.4);
+        }
+
+        .update-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .update-date {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .update-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .update-status.on-track {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .update-status.at-risk {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .update-status.blocked {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .update-content {
+            color: #fff;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .update-content h4 {
+            color: #00d4ff;
+            margin: 0 0 5px 0;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .update-content p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .update-blockers {
+            background: rgba(0, 212, 255, 0.05);
+            border-left: 3px solid #ef4444;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #fca5a5;
+        }
+
+        .no-updates {
+            text-align: center;
+            color: #aaa;
+            padding: 40px 20px;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            color: #86efac;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(0, 212, 255, 0.2);
+            border-top: 3px solid #00d4ff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(26, 79, 208, 0.05);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 10px;
+            color: #00d4ff;
+            text-decoration: none;
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .page-title {
+            flex: 1;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .main-content {
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+
+        /* Mobile Navigation */
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+            z-index: 1000;
+        }
+
+        .mobile-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.7rem;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-nav .nav-item svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .mobile-nav .nav-item.active {
+            color: #00d4ff;
+        }
+
+        @media (max-width: 768px) {
+            .work-form {
+                padding: 20px;
+            }
+
+            .status-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav" id="mobileNav">
+        <a href="dashboard.html" class="nav-item" data-page="dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Home</span>
+        </a>
+        <a href="attendance.html" class="nav-item" data-page="attendance">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>Attendance</span>
+        </a>
+        <a href="learning.html" class="nav-item" data-page="learning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+            <span>Learning</span>
+        </a>
+        <a href="work.html" class="nav-item active" data-page="work">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <span>Work</span>
+        </a>
+        <a href="chat.html" class="nav-item" data-page="chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Chat</span>
+        </a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="page-header">
+            <a href="dashboard.html" class="back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+            <h1 class="page-title">Work Updates</h1>
+            <div class="header-date" id="currentDate"></div>
+        </header>
+
+        <div class="work-container">
+            <!-- Error/Success Messages -->
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <!-- Work Update Form -->
+            <div class="work-form">
+                <h2 style="color: #00d4ff; margin-top: 0; margin-bottom: 25px;">Submit Today's Update</h2>
+
+                <form id="workUpdateForm">
+                    <!-- Accomplishments -->
+                    <div class="form-group">
+                        <label for="accomplishments">What did you accomplish today? (min 50 chars)</label>
+                        <textarea id="accomplishments" placeholder="Describe what you completed today..." required
+                            minlength="50"></textarea>
+                        <div class="char-count" id="accomplishCount">0 / 50 characters</div>
+                    </div>
+
+                    <!-- Tomorrow's Plan -->
+                    <div class="form-group">
+                        <label for="tomorrow">What will you do tomorrow? (min 50 chars)</label>
+                        <textarea id="tomorrow" placeholder="Describe your plans for tomorrow..." required
+                            minlength="50"></textarea>
+                        <div class="char-count" id="tomorrowCount">0 / 50 characters</div>
+                    </div>
+
+                    <!-- Blockers -->
+                    <div class="form-group">
+                        <label>Any blockers/challenges?</label>
+                        <select id="blockers" multiple style="min-height: 80px;">
+                            <option value="technical">Technical Issue</option>
+                            <option value="resource">Resource Needed</option>
+                            <option value="external">External Dependency</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <div style="color: #aaa; font-size: 12px; margin-top: 8px;">Hold Ctrl/Cmd to select multiple
+                        </div>
+                    </div>
+
+                    <!-- Blocker Description -->
+                    <div class="form-group">
+                        <label for="blockerDesc">Describe blockers (if any)</label>
+                        <textarea id="blockerDesc" placeholder="If you selected blockers, describe them here..."
+                            style="min-height: 80px;"></textarea>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="form-group">
+                        <label>Status</label>
+                        <div class="status-options">
+                            <div class="status-radio">
+                                <input type="radio" name="status" id="onTrack" value="on-track" checked>
+                                <label for="onTrack">On Track ✓</label>
+                            </div>
+                            <div class="status-radio">
+                                <input type="radio" name="status" id="atRisk" value="at-risk">
+                                <label for="atRisk">At Risk ⚠</label>
+                            </div>
+                            <div class="status-radio">
+                                <input type="radio" name="status" id="blocked" value="blocked">
+                                <label for="blocked">Blocked ✕</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-submit" id="submitBtn">Submit Update</button>
+                </form>
+            </div>
+
+            <!-- Updates History -->
+            <div class="updates-section">
+                <h3>Your Recent Updates</h3>
+                <div id="loadingSpinner" class="loading-spinner" style="display: none;"></div>
+                <div id="updatesList">
+                    <div class="no-updates">Loading updates...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Configuration -->
+    <script src="../js/config.js"></script>
+    <script>
+        // Initialize Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
+    <!-- Work Updates Script -->
+    <script>
+        let currentUser = null;
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function formatDateIST(date = new Date()) {
+            const istDate = new Date(date.toLocaleString('en-US', {
+                timeZone: 'Asia/Kolkata'
+            }));
+            return istDate.toLocaleDateString('en-IN', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function getTodayIST() {
+            const istDate = new Date(new Date().toLocaleString('en-US', {
+                timeZone: 'Asia/Kolkata'
+            }));
+            const year = istDate.getFullYear();
+            const month = String(istDate.getMonth() + 1).padStart(2, '0');
+            const day = String(istDate.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 5000);
+        }
+
+        function updateDateDisplay() {
+            document.getElementById('currentDate').textContent = formatDateIST();
+        }
+
+        // ============================================
+        // CHARACTER COUNT
+        // ============================================
+
+        document.getElementById('accomplishments').addEventListener('input', (e) => {
+            const count = e.target.value.length;
+            const countEl = document.getElementById('accomplishCount');
+            countEl.textContent = `${count} / 50 characters`;
+            if (count >= 50) {
+                countEl.classList.remove('error', 'warning');
+                countEl.classList.add('success');
+            } else {
+                countEl.classList.remove('success');
+                countEl.classList.add('error');
+            }
+        });
+
+        document.getElementById('tomorrow').addEventListener('input', (e) => {
+            const count = e.target.value.length;
+            const countEl = document.getElementById('tomorrowCount');
+            countEl.textContent = `${count} / 50 characters`;
+            if (count >= 50) {
+                countEl.classList.remove('error', 'warning');
+                countEl.classList.add('success');
+            } else {
+                countEl.classList.remove('success');
+                countEl.classList.add('error');
+            }
+        });
+
+        // ============================================
+        // FORM SUBMISSION
+        // ============================================
+
+        document.getElementById('workUpdateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                if (!currentUser) {
+                    showError('User not logged in');
+                    return;
+                }
+
+                // Get form data
+                const accomplishments = document.getElementById('accomplishments').value;
+                const tomorrow = document.getElementById('tomorrow').value;
+                const blockers = Array.from(document.getElementById('blockers').selectedOptions).map(o => o.value);
+                const blockerDesc = document.getElementById('blockerDesc').value;
+                const status = document.querySelector('input[name="status"]:checked')?.value;
+
+                if (!accomplishments || accomplishments.length < 50) {
+                    showError('Accomplishments must be at least 50 characters');
+                    return;
+                }
+
+                if (!tomorrow || tomorrow.length < 50) {
+                    showError('Tomorrow\'s plan must be at least 50 characters');
+                    return;
+                }
+
+                if (!status) {
+                    showError('Please select a status');
+                    return;
+                }
+
+                // Prepare data
+                const updateData = {
+                    user_id: currentUser.id,
+                    user_name: currentUser.name || currentUser.email,
+                    date: getTodayIST(),
+                    accomplishments: accomplishments,
+                    tomorrow_plan: tomorrow,
+                    blockers: blockers.length > 0 ? blockers.join(',') : null,
+                    blocker_description: blockerDesc || null,
+                    status: status
+                };
+
+                // Save to Supabase
+                const { data, error } = await supabase
+                    .from('work_updates')
+                    .insert([updateData]);
+
+                if (error) throw error;
+
+                showSuccess('Work update submitted successfully!');
+
+                // Reset form
+                document.getElementById('workUpdateForm').reset();
+                document.getElementById('accomplishCount').textContent = '0 / 50 characters';
+                document.getElementById('accomplishCount').classList.remove('success');
+                document.getElementById('tomorrowCount').textContent = '0 / 50 characters';
+                document.getElementById('tomorrowCount').classList.remove('success');
+
+                // Reload updates
+                await loadUpdates();
+
+            } catch (error) {
+                console.error('Error submitting update:', error);
+                showError('Error submitting update: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Update';
+            }
+        });
+
+        // ============================================
+        // LOAD UPDATES
+        // ============================================
+
+        async function loadUpdates() {
+            try {
+                if (!currentUser) return;
+
+                document.getElementById('loadingSpinner').style.display = 'block';
+
+                const { data, error } = await supabase
+                    .from('work_updates')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .order('date', { ascending: false })
+                    .limit(30);
+
+                if (error) throw error;
+
+                document.getElementById('loadingSpinner').style.display = 'none';
+
+                const updatesList = document.getElementById('updatesList');
+                updatesList.innerHTML = '';
+
+                if (!data || data.length === 0) {
+                    updatesList.innerHTML = '<div class="no-updates">No updates yet. Submit your first update!</div>';
+                    return;
+                }
+
+                data.forEach(update => {
+                    const date = new Date(update.date).toLocaleDateString('en-IN');
+                    const blockerInfo = update.blockers ?
+                        `<div class="update-blockers"><strong>Blockers:</strong> ${update.blockers}<br>${update.blocker_description || ''}</div>` :
+                        '';
+
+                    const card = document.createElement('div');
+                    card.className = 'update-card';
+                    card.innerHTML = `
+                        <div class="update-header">
+                            <span class="update-date">${date}</span>
+                            <span class="update-status ${update.status}">${(update.status || 'on-track').replace('-', ' ').toUpperCase()}</span>
+                        </div>
+                        <div class="update-content">
+                            <h4>✓ Accomplishments</h4>
+                            <p>${update.accomplishments || 'No accomplishments recorded'}</p>
+                            <h4>→ Tomorrow's Plan</h4>
+                            <p>${update.tomorrow_plan || 'No plan recorded'}</p>
+                            ${blockerInfo}
+                        </div>
+                    `;
+                    updatesList.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error('Error loading updates:', error);
+                showError('Error loading updates');
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        async function initializeWorkUpdates() {
+            try {
+                // Check session storage for logged-in user
+                const employeeData = sessionStorage.getItem('employeeData');
+                const employeeId = sessionStorage.getItem('employeeId');
+
+                if (!employeeData && !employeeId) {
+                    window.location.href = '../login.html';
+                    return;
+                }
+
+                if (employeeData) {
+                    currentUser = JSON.parse(employeeData);
+                } else {
+                    currentUser = { id: employeeId };
+                }
+
+                updateDateDisplay();
+                await loadUpdates();
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError('Error initializing page');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeWorkUpdates);
+    </script>
+</body>
+
+</html>

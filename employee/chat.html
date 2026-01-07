@@ -3,565 +3,1005 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat | Grofast Team</title>
-    <!-- Google Fonts -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chat - Grofast Digital</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="gstatic" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap"
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="../css/chat.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/employee-dashboard.css">
+    <style>
+        .chat-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 0;
+            height: calc(100vh - 120px);
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .chat-sidebar {
+            background: rgba(26, 79, 208, 0.08);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px 0 0 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .sidebar-header h2 {
+            color: #00d4ff;
+            margin: 0 0 15px 0;
+            font-size: 16px;
+        }
+
+        .btn-new-chat {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #1a4fd0, #00d4ff);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-new-chat:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .conversations-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .conversation-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #fff;
+        }
+
+        .conversation-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        .conversation-item.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+        }
+
+        .conversation-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 13px;
+            color: #00d4ff;
+        }
+
+        .conversation-preview {
+            font-size: 12px;
+            color: #aaa;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-main {
+            background: rgba(26, 79, 208, 0.03);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 0 12px 12px 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title {
+            color: #00d4ff;
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .chat-participants {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .message.own {
+            justify-content: flex-end;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a4fd0, #00d4ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .message.own .message-avatar {
+            background: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .message-bubble {
+            max-width: 60%;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 12px 15px;
+            border-radius: 12px;
+            color: #fff;
+            word-wrap: break-word;
+        }
+
+        .message.own .message-bubble {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            border-radius: 12px 0 12px 12px;
+        }
+
+        .message:not(.own) .message-bubble {
+            border-radius: 0 12px 12px 12px;
+        }
+
+        .message-sender {
+            font-size: 12px;
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .message.own .message-sender {
+            color: #10b981;
+            text-align: right;
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .chat-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #aaa;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .chat-input-area {
+            padding: 20px;
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(26, 79, 208, 0.1);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            resize: none;
+            max-height: 100px;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(26, 79, 208, 0.15);
+        }
+
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-send {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #1a4fd0, #00d4ff);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-send:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 20px;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            color: #86efac;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 20px;
+            display: none;
+        }
+
+        .no-conversations {
+            text-align: center;
+            color: #aaa;
+            padding: 40px 20px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a2332;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            color: #00d4ff;
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(26, 79, 208, 0.1);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(26, 79, 208, 0.15);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #1a4fd0, #00d4ff);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(26, 79, 208, 0.05);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 10px;
+            color: #00d4ff;
+            text-decoration: none;
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .page-title {
+            flex: 1;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .main-content {
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+
+        /* Mobile Navigation */
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+            z-index: 1000;
+        }
+
+        .mobile-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.7rem;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-nav .nav-item svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .mobile-nav .nav-item.active {
+            color: #00d4ff;
+        }
+
+        @media (max-width: 1024px) {
+            .chat-container {
+                grid-template-columns: 250px 1fr;
+            }
+
+            .message-bubble {
+                max-width: 75%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .chat-sidebar {
+                display: none;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 250px;
+                height: 100%;
+                z-index: 100;
+            }
+
+            .chat-sidebar.active {
+                display: flex;
+            }
+
+            .chat-main {
+                border-radius: 12px;
+                min-height: 60vh;
+            }
+
+            .message-bubble {
+                max-width: 85%;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <div class="chat-app-container">
-        <!-- Google-style Narrow App Rail -->
-        <aside class="app-rail">
-            <div class="rail-top">
-                <div class="rail-item logo-item">
-                    <img src="https://res.cloudinary.com/dts789/image/upload/v1734913840/6_icf4m4.png" alt="Grofast"
-                        class="grofast-logo">
-                </div>
-                <a href="dashboard.html" class="rail-item" title="Dashboard">
-                    <i data-lucide="layout-dashboard"></i>
-                    <span>Home</span>
-                </a>
-                <a href="#" class="rail-item active" title="Chat">
-                    <i data-lucide="message-square"></i>
-                    <span>Chat</span>
-                </a>
-                <a href="#" class="rail-item" title="Spaces">
-                    <i data-lucide="users-2"></i>
-                    <span>Spaces</span>
-                </a>
-            </div>
-            <div class="rail-bottom">
-                <div class="rail-item user-avatar-item">
-                    <div class="user-avatar" id="railUserAvatar">RK</div>
-                </div>
-            </div>
-        </aside>
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="grid-overlay"></div>
+    </div>
 
-        <!-- Main Workspace -->
-        <div class="chat-workspace">
-            <!-- Navigation Sidebar (Google Chat Style) -->
-            <nav class="chat-nav-sidebar">
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav" id="mobileNav">
+        <a href="dashboard.html" class="nav-item" data-page="dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Home</span>
+        </a>
+        <a href="attendance.html" class="nav-item" data-page="attendance">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>Attendance</span>
+        </a>
+        <a href="learning.html" class="nav-item" data-page="learning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+            <span>Learning</span>
+        </a>
+        <a href="work.html" class="nav-item" data-page="work">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <span>Work</span>
+        </a>
+        <a href="chat.html" class="nav-item active" data-page="chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Chat</span>
+        </a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="page-header">
+            <a href="dashboard.html" class="back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+            <h1 class="page-title">Chat</h1>
+            <div class="header-date"></div>
+        </header>
+
+        <!-- Error/Success Messages -->
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <!-- Chat Container -->
+        <div class="chat-container">
+            <!-- Sidebar -->
+            <div class="chat-sidebar" id="chatSidebar">
                 <div class="sidebar-header">
-                    <div class="search-box">
-                        <i data-lucide="search"></i>
-                        <input type="text" placeholder="Find people, spaces, or messages" id="chatSearch">
-                    </div>
+                    <h2>Conversations</h2>
+                    <button class="btn-new-chat" onclick="openNewChatModal()">+ New Chat</button>
                 </div>
+                <div class="conversations-list" id="conversationsList">
+                    <div class="no-conversations">No conversations yet. Create one to start!</div>
+                </div>
+            </div>
 
-                <div class="sidebar-sections scrollable">
-                    <!-- Spaces Section -->
-                    <div class="nav-section">
-                        <div class="section-header">
-                            <div onclick="toggleSection('spaces-list')"
-                                style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;">
-                                <i data-lucide="chevron-down" class="toggle-icon"></i>
-                                <span>Spaces</span>
-                            </div>
-                            <button class="add-btn" id="createSpaceBtn" title="Create new space"><i
-                                    data-lucide="plus"></i></button>
-                        </div>
-                        <div class="section-list" id="spaces-list">
-                            <div class="list-item active" onclick="switchToSpace('team-general')">
-                                <div class="item-icon-box blue-box">
-                                    <i data-lucide="hash"></i>
-                                </div>
-                                <span class="item-name">General Team Chat</span>
-                            </div>
-                            <div class="list-item" onclick="switchToSpace('announcements')">
-                                <div class="item-icon-box green-box">
-                                    <i data-lucide="megaphone"></i>
-                                </div>
-                                <span class="item-name">Announcements</span>
-                            </div>
-                            <div class="list-item" onclick="switchToSpace('projects')">
-                                <div class="item-icon-box purple-box">
-                                    <i data-lucide="clapperboard"></i>
-                                </div>
-                                <span class="item-name">Active Projects</span>
-                            </div>
-                            <!-- Custom spaces will be added here -->
-                            <div id="custom-spaces-list"></div>
-                        </div>
-                    </div>
-
-                    <!-- Direct Messages Section -->
-                    <div class="nav-section">
-                        <div class="section-header" onclick="toggleSection('dm-list')">
-                            <i data-lucide="chevron-down" class="toggle-icon"></i>
-                            <span>Chat</span>
-                            <button class="add-btn"><i data-lucide="plus"></i></button>
-                        </div>
-                        <div class="section-list" id="dm-list">
-                            <!-- Team members will be populated here -->
-                            <div class="list-item loading">Loading team...</div>
+            <!-- Main Chat Area -->
+            <div class="chat-main">
+                <div id="chatContent">
+                    <div class="chat-empty">
+                        <div>
+                            <p>💬 Select a conversation or create a new one to get started</p>
                         </div>
                     </div>
                 </div>
-            </nav>
+            </div>
+        </div>
+    </main>
 
-            <!-- Chat Main View -->
-            <main class="chat-view-container">
-                <!-- Chat Header -->
-                <header class="chat-header">
-                    <div class="recipient-info">
-                        <div class="recipient-avatar" id="headerAvatar">TC</div>
-                        <div class="recipient-details">
-                            <div class="name-row">
-                                <h2 id="recipientName">General Team Chat</h2>
-                                <i data-lucide="chevron-down" class="header-chevron"></i>
-                                <div class="star-rating">
-                                    <i data-lucide="star"></i>
-                                </div>
-                            </div>
-                            <div class="status-row">
-                                <span class="status-indicator online"></span>
-                                <span class="status-text" id="recipientStatus">Active now</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="header-actions">
-                        <button class="icon-btn" title="Start video call" id="headerVideoBtn"><i
-                                data-lucide="video"></i></button>
-                        <button class="icon-btn" title="Add members" id="headerAddUserBtn"><i
-                                data-lucide="user-plus"></i></button>
-                        <button class="icon-btn" title="Search in chat" id="headerSearchBtn"><i
-                                data-lucide="search"></i></button>
-                        <button class="icon-btn" title="More options" id="headerMoreBtn"><i
-                                data-lucide="more-vertical"></i></button>
-                    </div>
-                </header>
-
-                <!-- Messages Area -->
-                <div class="messages-scroll-area" id="chatMessages">
-                    <div class="messages-container">
-                        <!-- Date Separator -->
-                        <div class="date-separator">
-                            <span>Monday, January 5</span>
-                        </div>
-
-                        <!-- Example Messages (Will be dynamic) -->
-                        <div class="message-row">
-                            <div class="msg-avatar">AD</div>
-                            <div class="msg-content-wrapper">
-                                <div class="msg-meta">
-                                    <span class="sender-name">Admin</span>
-                                    <span class="send-time">10:45 AM</span>
-                                </div>
-                                <div class="msg-bubbles">
-                                    <div class="msg-bubble grey-bubble">
-                                        Welcome back everyone! Let's have a great week ahead 🚀
-                                    </div>
-                                    <div class="msg-bubble grey-bubble">
-                                        Please remember to check-in your attendance with a photo.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sent Message Mockup -->
-                        <div class="message-row sent">
-                            <div class="msg-content-wrapper">
-                                <div class="msg-meta">
-                                    <span class="send-time">11:02 AM</span>
-                                </div>
-                                <div class="msg-bubbles">
-                                    <div class="msg-bubble blue-bubble">
-                                        Already did! Working from the office today. 🏢
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- New Chat Modal -->
+    <div id="newChatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Start New Conversation</h2>
+                <button class="modal-close" onclick="closeNewChatModal()">&times;</button>
+            </div>
+            <form id="newChatForm">
+                <div class="form-group">
+                    <label for="conversationTitle">Conversation Title</label>
+                    <input type="text" id="conversationTitle" placeholder="e.g., Project Discussion" required>
                 </div>
-
-                <!-- Chat Input Component -->
-                <footer class="chat-footer">
-                    <div class="chat-input-toolbar">
-                        <div class="input-actions-left">
-                            <button class="toolbar-btn" title="Format options"><i data-lucide="type"></i></button>
-                            <button class="toolbar-btn" title="Emojis" id="emojiTrigger"><i
-                                    data-lucide="smile"></i></button>
-                            <button class="toolbar-btn" title="Add image"
-                                onclick="document.getElementById('imageInput').click()"><i
-                                    data-lucide="image"></i></button>
-                            <button class="toolbar-btn" title="Attach file"
-                                onclick="document.getElementById('fileInput').click()"><i
-                                    data-lucide="paperclip"></i></button>
-                            <button class="toolbar-btn" title="Add more" id="addMoreTrigger"><i
-                                    data-lucide="plus-circle"></i></button>
-                        </div>
-                    </div>
-                    <div class="chat-input-field">
-                        <textarea id="messageInput" placeholder="History is on. Send a message..." rows="1"
-                            oninput="autoExpand(this)"></textarea>
-                        <button class="send-btn-main" id="sendMessageBtn">
-                            <i data-lucide="send"></i>
-                        </button>
-                    </div>
-
-                    <!-- More Options Menu -->
-                    <div id="addMoreMenu" class="more-menu hidden"
-                        style="position: absolute; bottom: 100px; left: 140px; background: white; border: 1px solid #ddd; border-radius: 8px; width: 220px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; overflow: hidden;">
-                        <div class="menu-item" onclick="handleMoreAction('video')"
-                            style="padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 14px; transition: background 0.2s;">
-                            <i data-lucide="video" style="width: 18px; color: #1a73e8;"></i>
-                            <span>Create Meeting</span>
-                        </div>
-                        <div class="menu-item" onclick="handleMoreAction('calendar')"
-                            style="padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 14px; transition: background 0.2s;">
-                            <i data-lucide="calendar"
-                                style="width: 18px; color: #e8eaed; background: #ea4335; border-radius: 4px; padding: 2px;"></i>
-                            <span>Schedule Meeting</span>
-                        </div>
-                        <div class="menu-item" onclick="handleMoreAction('task')"
-                            style="padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 14px; transition: background 0.2s;">
-                            <i data-lucide="check-square" style="width: 18px; color: #fbbc04;"></i>
-                            <span>Assign Task</span>
-                        </div>
-                    </div>
-
-                    <!-- Hidden Inputs -->
-                    <input type="file" id="imageInput" accept="image/*" style="display: none"
-                        onchange="handleFileUpload(this, 'image')">
-                    <input type="file" id="fileInput" style="display: none" onchange="handleFileUpload(this, 'file')">
-
-                    <!-- Emoji Picker (Simplified) -->
-                    <div id="emojiPicker" class="emoji-picker hidden"
-                        style="position: absolute; bottom: 100px; left: 24px; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 10px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000;">
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('😀')">😀</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('😂')">😂</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('❤️')">❤️</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('👍')">👍</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('🔥')">🔥</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('🚀')">🚀</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('✨')">✨</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('🎉')">🎉</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('✅')">✅</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('⭐')">⭐</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('😊')">😊</span>
-                        <span style="cursor:pointer; font-size: 20px" onclick="addEmoji('🙌')">🙌</span>
-                    </div>
-                </footer>
-
-                <!-- Meeting Scheduler Modal -->
-                <div id="schedulerModal" class="scheduler-modal hidden"
-                    style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000;">
-                    <div class="scheduler-content"
-                        style="background: white; border-radius: 16px; padding: 24px; width: 400px; max-width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h3 style="margin: 0; font-size: 18px; color: #3c4043;">Schedule a Meeting</h3>
-                            <button onclick="closeScheduler()"
-                                style="background: none; border: none; cursor: pointer; padding: 4px;">
-                                <i data-lucide="x" style="width: 20px; color: #5f6368;"></i>
-                            </button>
-                        </div>
-
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Meeting
-                                Title</label>
-                            <input type="text" id="meetingTitle" placeholder="Team Sync"
-                                style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
-                        </div>
-
-                        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-                            <div style="flex: 1;">
-                                <label
-                                    style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Date</label>
-                                <input type="date" id="meetingDate"
-                                    style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
-                            </div>
-                            <div style="flex: 1;">
-                                <label
-                                    style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Time</label>
-                                <input type="time" id="meetingTime"
-                                    style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 20px;">
-                            <label
-                                style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Duration</label>
-                            <select id="meetingDuration"
-                                style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; background: white;">
-                                <option value="30">30 minutes</option>
-                                <option value="60" selected>1 hour</option>
-                                <option value="90">1.5 hours</option>
-                                <option value="120">2 hours</option>
-                            </select>
-                        </div>
-
-                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                            <button onclick="closeScheduler()"
-                                style="padding: 10px 20px; border: 1px solid #dadce0; border-radius: 8px; background: white; cursor: pointer; font-size: 14px;">Cancel</button>
-                            <button onclick="bookMeeting()"
-                                style="padding: 10px 20px; border: none; border-radius: 8px; background: #1a73e8; color: white; cursor: pointer; font-size: 14px; font-weight: 500;">Book
-                                Meeting</button>
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label for="conversationDesc">Description (optional)</label>
+                    <textarea id="conversationDesc" placeholder="Add a description..."
+                        style="min-height: 80px;"></textarea>
                 </div>
-
-                <!-- Create Group Modal -->
-                <div id="createGroupModal" class="scheduler-modal hidden"
-                    style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000;">
-                    <div class="scheduler-content"
-                        style="background: white; border-radius: 16px; padding: 24px; width: 400px; max-width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h3 style="margin: 0; font-size: 18px; color: #3c4043;">Create a Space</h3>
-                            <button onclick="closeCreateGroup()"
-                                style="background: none; border: none; cursor: pointer; padding: 4px;">
-                                <i data-lucide="x" style="width: 20px; color: #5f6368;"></i>
-                            </button>
-                        </div>
-
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Space
-                                Name</label>
-                            <input type="text" id="groupName" placeholder="e.g., Marketing Team"
-                                style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
-                        </div>
-
-                        <div style="margin-bottom: 16px;">
-                            <label
-                                style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Icon</label>
-                            <div style="display: flex; gap: 8px;">
-                                <button type="button" class="icon-choice selected" data-icon="hash"
-                                    onclick="selectGroupIcon('hash')"
-                                    style="width: 40px; height: 40px; border: 2px solid #1a73e8; border-radius: 8px; background: #e8f0fe; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="hash" style="width: 18px; color: #1a73e8;"></i>
-                                </button>
-                                <button type="button" class="icon-choice" data-icon="users"
-                                    onclick="selectGroupIcon('users')"
-                                    style="width: 40px; height: 40px; border: 1px solid #dadce0; border-radius: 8px; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="users" style="width: 18px; color: #5f6368;"></i>
-                                </button>
-                                <button type="button" class="icon-choice" data-icon="briefcase"
-                                    onclick="selectGroupIcon('briefcase')"
-                                    style="width: 40px; height: 40px; border: 1px solid #dadce0; border-radius: 8px; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="briefcase" style="width: 18px; color: #5f6368;"></i>
-                                </button>
-                                <button type="button" class="icon-choice" data-icon="star"
-                                    onclick="selectGroupIcon('star')"
-                                    style="width: 40px; height: 40px; border: 1px solid #dadce0; border-radius: 8px; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="star" style="width: 18px; color: #5f6368;"></i>
-                                </button>
-                                <button type="button" class="icon-choice" data-icon="zap"
-                                    onclick="selectGroupIcon('zap')"
-                                    style="width: 40px; height: 40px; border: 1px solid #dadce0; border-radius: 8px; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="zap" style="width: 18px; color: #5f6368;"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Add
-                                Members</label>
-                            <div id="membersList"
-                                style="max-height: 150px; overflow-y: auto; border: 1px solid #dadce0; border-radius: 8px; padding: 8px;">
-                                <!-- Members will be populated here -->
-                            </div>
-                        </div>
-
-                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                            <button onclick="closeCreateGroup()"
-                                style="padding: 10px 20px; border: 1px solid #dadce0; border-radius: 8px; background: white; cursor: pointer; font-size: 14px;">Cancel</button>
-                            <button onclick="createGroup()"
-                                style="padding: 10px 20px; border: none; border-radius: 8px; background: #1a73e8; color: white; cursor: pointer; font-size: 14px; font-weight: 500;">Create
-                                Space</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Task Assignment Modal -->
-                <div id="taskModal" class="scheduler-modal hidden"
-                    style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000;">
-                    <div class="scheduler-content"
-                        style="background: white; border-radius: 16px; padding: 24px; width: 420px; max-width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h3 style="margin: 0; font-size: 18px; color: #3c4043;">Assign a Task</h3>
-                            <button onclick="closeTaskModal()"
-                                style="background: none; border: none; cursor: pointer; padding: 4px;">
-                                <i data-lucide="x" style="width: 20px; color: #5f6368;"></i>
-                            </button>
-                        </div>
-
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Task
-                                Title</label>
-                            <input type="text" id="taskTitle" placeholder="e.g., Update website banner"
-                                style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
-                        </div>
-
-                        <div style="margin-bottom: 16px;">
-                            <label
-                                style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Description
-                                (optional)</label>
-                            <textarea id="taskDescription" placeholder="Add more details..." rows="2"
-                                style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; box-sizing: border-box; resize: none;"></textarea>
-                        </div>
-
-                        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-                            <div style="flex: 1;">
-                                <label
-                                    style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Assign
-                                    To</label>
-                                <select id="taskAssignee"
-                                    style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; background: white;">
-                                    <option value="">Select member...</option>
-                                </select>
-                            </div>
-                            <div style="flex: 1;">
-                                <label
-                                    style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Priority</label>
-                                <select id="taskPriority"
-                                    style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; background: white;">
-                                    <option value="low">🟢 Low</option>
-                                    <option value="medium" selected>🟡 Medium</option>
-                                    <option value="high">🔴 High</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; font-size: 13px; color: #5f6368; margin-bottom: 6px;">Due
-                                Date</label>
-                            <input type="date" id="taskDueDate"
-                                style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
-                        </div>
-
-                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                            <button onclick="closeTaskModal()"
-                                style="padding: 10px 20px; border: 1px solid #dadce0; border-radius: 8px; background: white; cursor: pointer; font-size: 14px;">Cancel</button>
-                            <button onclick="assignTask()"
-                                style="padding: 10px 20px; border: none; border-radius: 8px; background: #fbbc04; color: #3c4043; cursor: pointer; font-size: 14px; font-weight: 500;">Assign
-                                Task</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Team Member Profile Modal -->
-                <div id="profileModal" class="scheduler-modal hidden"
-                    style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000;">
-                    <div class="scheduler-content"
-                        style="background: white; border-radius: 16px; padding: 0; width: 380px; max-width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2); overflow: hidden;">
-                        <!-- Profile Header with Photo -->
-                        <div id="profileHeader"
-                            style="background: linear-gradient(135deg, #1a73e8, #0d47a1); padding: 30px 24px; text-align: center; position: relative;">
-                            <button onclick="closeProfileModal()"
-                                style="position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.2); border: none; cursor: pointer; padding: 6px; border-radius: 50%; color: white;">
-                                <i data-lucide="x" style="width: 18px;"></i>
-                            </button>
-                            <div id="profileModalAvatar"
-                                style="width: 80px; height: 80px; border-radius: 50%; background: white; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #1a73e8; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; overflow: hidden;"
-                                onclick="triggerProfilePhotoUpload()">
-                                <span id="profileModalInitials">AB</span>
-                                <img id="profileModalPhoto" src="" alt=""
-                                    style="display: none; width: 100%; height: 100%; object-fit: cover;">
-                            </div>
-                            <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;"
-                                onchange="handleProfilePhotoUpload(this)">
-                            <h3 id="profileModalName" style="color: white; margin: 0 0 4px; font-size: 18px;">User Name
-                            </h3>
-                            <p id="profileModalPosition"
-                                style="color: rgba(255,255,255,0.8); margin: 0; font-size: 13px;">Position</p>
-                        </div>
-
-                        <!-- Profile Body -->
-                        <div style="padding: 20px 24px;">
-                            <!-- Bio Section -->
-                            <div style="margin-bottom: 16px;">
-                                <div
-                                    style="font-size: 11px; color: #5f6368; text-transform: uppercase; margin-bottom: 6px; font-weight: 600;">
-                                    About</div>
-                                <p id="profileModalBio"
-                                    style="margin: 0; font-size: 14px; color: #3c4043; line-height: 1.5;">No bio added
-                                    yet.</p>
-                                <textarea id="profileModalBioEdit"
-                                    style="display: none; width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; resize: none; box-sizing: border-box;"
-                                    rows="3" placeholder="Write something about yourself..."></textarea>
-                            </div>
-
-                            <!-- Contact Info -->
-                            <div style="margin-bottom: 16px;">
-                                <div
-                                    style="font-size: 11px; color: #5f6368; text-transform: uppercase; margin-bottom: 8px; font-weight: 600;">
-                                    Contact</div>
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                                    <i data-lucide="mail" style="width: 16px; color: #5f6368;"></i>
-                                    <span id="profileModalEmail"
-                                        style="font-size: 14px; color: #3c4043;">email@example.com</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <i data-lucide="phone" style="width: 16px; color: #5f6368;"></i>
-                                    <span id="profileModalPhone" style="font-size: 14px; color: #3c4043;">Not
-                                        provided</span>
-                                    <input id="profileModalPhoneEdit" type="tel"
-                                        style="display: none; flex: 1; padding: 8px; border: 1px solid #dadce0; border-radius: 6px; font-size: 14px;"
-                                        placeholder="+91 12345 67890">
-                                </div>
-                            </div>
-
-                            <!-- LinkedIn -->
-                            <div style="margin-bottom: 16px;">
-                                <div
-                                    style="font-size: 11px; color: #5f6368; text-transform: uppercase; margin-bottom: 8px; font-weight: 600;">
-                                    LinkedIn</div>
-                                <div id="linkedinView" style="display: flex; align-items: center; gap: 10px;">
-                                    <a id="socialLinkedin" href="#" target="_blank"
-                                        style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #0077b5; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">
-                                        <i data-lucide="linkedin" style="width: 16px;"></i>
-                                        <span>View Profile</span>
-                                    </a>
-                                </div>
-                                <div id="linkedinEdit" style="display: none;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <i data-lucide="linkedin" style="width: 16px; color: #0077b5;"></i>
-                                        <input id="editLinkedin" type="url"
-                                            style="flex: 1; padding: 8px; border: 1px solid #dadce0; border-radius: 6px; font-size: 14px;"
-                                            placeholder="https://linkedin.com/in/yourprofile">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Action Buttons -->
-                            <div id="profileViewActions" style="display: flex; gap: 10px;">
-                                <button onclick="startChatWith()"
-                                    style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: #1a73e8; color: white; cursor: pointer; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                                    <i data-lucide="message-circle" style="width: 16px;"></i> Message
-                                </button>
-                                <button id="editProfileBtn" onclick="toggleEditProfile()"
-                                    style="display: none; flex: 1; padding: 10px; border: 1px solid #dadce0; border-radius: 8px; background: white; cursor: pointer; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                                    <i data-lucide="edit-2" style="width: 16px;"></i> Edit Profile
-                                </button>
-                            </div>
-                            <div id="profileEditActions" style="display: none; gap: 10px;">
-                                <button onclick="saveProfileChanges()"
-                                    style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: #1e8e3e; color: white; cursor: pointer; font-size: 14px; font-weight: 500;">Save
-                                    Changes</button>
-                                <button onclick="cancelEditProfile()"
-                                    style="flex: 1; padding: 10px; border: 1px solid #dadce0; border-radius: 8px; background: white; cursor: pointer; font-size: 14px;">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
+                <button type="submit" class="btn-submit">Create Conversation</button>
+            </form>
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Configuration -->
     <script src="../js/config.js"></script>
-    <script src="../js/admin-data.js"></script>
-    <script src="../js/chat.js"></script>
+    <script>
+        // Initialize Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
+    <!-- Chat Script -->
+    <script>
+        let currentUser = null;
+        let currentConversation = null;
+        let allConversations = [];
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 5000);
+        }
+
+        function formatTimeIST(date) {
+            const istDate = new Date(date.toLocaleString('en-US', {
+                timeZone: 'Asia/Kolkata'
+            }));
+            return istDate.toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        function getInitials(name) {
+            if (!name) return 'U';
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        }
+
+        // ============================================
+        // LOAD CONVERSATIONS
+        // ============================================
+
+        async function loadConversations() {
+            try {
+                if (!currentUser) return;
+
+                // Try to load from messages table (team chat)
+                const { data, error } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('is_team_chat', true)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+
+                if (!error && data) {
+                    // Group messages by "conversation" (we'll use team chat as one conversation)
+                    allConversations = [{
+                        id: 'team',
+                        title: 'Team Chat',
+                        description: 'General team discussion',
+                        messages: data
+                    }];
+                } else {
+                    allConversations = [];
+                }
+
+                renderConversations();
+
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+                // Show empty state instead of error
+                allConversations = [];
+                renderConversations();
+            }
+        }
+
+        function renderConversations() {
+            const list = document.getElementById('conversationsList');
+            list.innerHTML = '';
+
+            if (!allConversations || allConversations.length === 0) {
+                list.innerHTML = '<div class="no-conversations">No conversations yet. Create one to start!</div>';
+                return;
+            }
+
+            allConversations.forEach(conv => {
+                const item = document.createElement('div');
+                item.className = 'conversation-item';
+                if (currentConversation && currentConversation.id === conv.id) {
+                    item.classList.add('active');
+                }
+                item.onclick = () => selectConversation(conv);
+
+                item.innerHTML = `
+                    <div class="conversation-title">${conv.title}</div>
+                    <div class="conversation-preview">${conv.description || 'No description'}</div>
+                `;
+
+                list.appendChild(item);
+            });
+        }
+
+        // ============================================
+        // SELECT CONVERSATION
+        // ============================================
+
+        async function selectConversation(conversation) {
+            currentConversation = conversation;
+            renderConversations();
+            await loadMessages();
+        }
+
+        // ============================================
+        // LOAD MESSAGES
+        // ============================================
+
+        async function loadMessages() {
+            try {
+                if (!currentConversation) return;
+
+                let messages = [];
+
+                if (currentConversation.id === 'team') {
+                    // Load team chat messages
+                    const { data, error } = await supabase
+                        .from('messages')
+                        .select('*')
+                        .eq('is_team_chat', true)
+                        .order('created_at', { ascending: true })
+                        .limit(100);
+
+                    if (!error) {
+                        messages = data || [];
+                    }
+                }
+
+                renderChatView(messages);
+
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                renderChatView([]);
+            }
+        }
+
+        function renderChatView(messages) {
+            const content = document.getElementById('chatContent');
+
+            // Create chat header
+            const header = document.createElement('div');
+            header.className = 'chat-header';
+            header.innerHTML = `
+                <div>
+                    <div class="chat-title">${currentConversation.title}</div>
+                    <div class="chat-participants">${currentConversation.description || 'Team conversation'}</div>
+                </div>
+            `;
+
+            // Create messages area
+            const messagesArea = document.createElement('div');
+            messagesArea.className = 'chat-messages';
+            messagesArea.id = 'messagesArea';
+
+            if (!messages || messages.length === 0) {
+                messagesArea.innerHTML = '<div class="chat-empty">No messages yet. Start the conversation!</div>';
+            } else {
+                messages.forEach(msg => {
+                    const isOwn = String(msg.user_id) === String(currentUser.id);
+                    const messageEl = document.createElement('div');
+                    messageEl.className = 'message' + (isOwn ? ' own' : '');
+
+                    const avatar = document.createElement('div');
+                    avatar.className = 'message-avatar';
+                    avatar.textContent = getInitials(msg.user_name);
+
+                    const bubble = document.createElement('div');
+                    bubble.className = 'message-bubble';
+
+                    const sender = document.createElement('div');
+                    sender.className = 'message-sender';
+                    sender.textContent = msg.user_name || 'Unknown';
+
+                    const text = document.createElement('div');
+                    text.className = 'message-text';
+                    text.textContent = msg.content;
+
+                    const time = document.createElement('div');
+                    time.className = 'message-time';
+                    time.textContent = formatTimeIST(new Date(msg.created_at));
+
+                    bubble.appendChild(sender);
+                    bubble.appendChild(text);
+                    bubble.appendChild(time);
+
+                    if (isOwn) {
+                        messageEl.appendChild(bubble);
+                        messageEl.appendChild(avatar);
+                    } else {
+                        messageEl.appendChild(avatar);
+                        messageEl.appendChild(bubble);
+                    }
+
+                    messagesArea.appendChild(messageEl);
+                });
+            }
+
+            // Create input area
+            const inputArea = document.createElement('div');
+            inputArea.className = 'chat-input-area';
+            inputArea.innerHTML = `
+                <textarea class="chat-input" id="messageInput" placeholder="Type your message..." rows="1"></textarea>
+                <button class="btn-send" onclick="sendMessage()">Send</button>
+            `;
+
+            // Clear and rebuild
+            content.innerHTML = '';
+            content.appendChild(header);
+            content.appendChild(messagesArea);
+            content.appendChild(inputArea);
+
+            // Scroll to bottom
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+
+            // Auto-resize textarea
+            const textarea = document.getElementById('messageInput');
+            textarea.addEventListener('input', () => {
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+            });
+
+            // Send on Enter (without Shift)
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
+
+        // ============================================
+        // SEND MESSAGE
+        // ============================================
+
+        async function sendMessage() {
+            try {
+                if (!currentConversation || !currentUser) {
+                    showError('No conversation selected');
+                    return;
+                }
+
+                const textarea = document.getElementById('messageInput');
+                const message = textarea.value.trim();
+
+                if (!message) {
+                    showError('Message cannot be empty');
+                    return;
+                }
+
+                // Insert message
+                const { data, error } = await supabase
+                    .from('messages')
+                    .insert([{
+                        user_id: currentUser.id,
+                        user_name: currentUser.name || currentUser.email || 'User',
+                        content: message,
+                        is_team_chat: true,
+                        type: 'text'
+                    }]);
+
+                if (error) throw error;
+
+                textarea.value = '';
+                textarea.style.height = 'auto';
+                await loadMessages();
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showError('Error sending message: ' + error.message);
+            }
+        }
+
+        // ============================================
+        // NEW CHAT MODAL
+        // ============================================
+
+        function openNewChatModal() {
+            document.getElementById('newChatModal').classList.add('active');
+        }
+
+        function closeNewChatModal() {
+            document.getElementById('newChatModal').classList.remove('active');
+            document.getElementById('newChatForm').reset();
+        }
+
+        document.getElementById('newChatForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            try {
+                const title = document.getElementById('conversationTitle').value;
+                const description = document.getElementById('conversationDesc').value;
+
+                // For now, just add to team chat
+                showSuccess('Conversation created! Using Team Chat.');
+                closeNewChatModal();
+
+                // Auto-select team chat
+                if (allConversations.length > 0) {
+                    await selectConversation(allConversations[0]);
+                }
+
+            } catch (error) {
+                console.error('Error creating conversation:', error);
+                showError('Error creating conversation: ' + error.message);
+            }
+        });
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        async function initializeChat() {
+            try {
+                // Check session storage for logged-in user
+                const employeeData = sessionStorage.getItem('employeeData');
+                const employeeId = sessionStorage.getItem('employeeId');
+                const employeeName = sessionStorage.getItem('employeeName');
+
+                if (!employeeData && !employeeId) {
+                    window.location.href = '../login.html';
+                    return;
+                }
+
+                if (employeeData) {
+                    currentUser = JSON.parse(employeeData);
+                } else {
+                    currentUser = {
+                        id: employeeId,
+                        name: employeeName || 'User'
+                    };
+                }
+
+                await loadConversations();
+
+                // Auto-select first conversation if available
+                if (allConversations.length > 0) {
+                    await selectConversation(allConversations[0]);
+                }
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError('Error initializing chat');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeChat);
+
+        // Close modal when clicking outside
+        document.getElementById('newChatModal').addEventListener('click', (e) => {
+            if (e.target.id === 'newChatModal') {
+                closeNewChatModal();
+            }
+        });
+    </script>
 </body>
 
 </html>
