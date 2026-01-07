@@ -4,13 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Admin Command Center | Grofast Digital</title>
+    <title>Admin - Grofast Digital</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
     <!-- Lucide Icons -->
@@ -19,428 +18,150 @@
     <!-- Styles -->
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin.css">
+
     <style>
-        :root {
-            --admin-primary: #8b5cf6;
-            --admin-secondary: #ec4899;
-            --admin-accent: #06b6d4;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
+        /* Smooth Loading & Animations */
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
 
-        .admin-layout {
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            min-height: 100vh;
-            background: #020617;
+        .spin {
+            animation: spin 1s linear infinite;
         }
 
-        /* Sidebar Navigation */
-        .admin-sidebar {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid var(--glass-border);
-            padding: 2rem;
+        .sync-loader {
             display: flex;
             flex-direction: column;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            z-index: 100;
-        }
-
-        .sidebar-logo {
-            display: flex;
             align-items: center;
-            gap: 1rem;
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: linear-gradient(to right, var(--admin-primary), var(--admin-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 3rem;
+            padding: 3rem;
+            color: #64748b;
         }
 
-        .nav-links {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+        /* Adjusting to match Landing Page aesthetic */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            color: #1e293b;
         }
 
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.8rem 1.2rem;
-            border-radius: 12px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .nav-item:hover,
-        .nav-item.active {
-            background: rgba(139, 92, 246, 0.1);
-            color: white;
-            transform: translateX(5px);
-        }
-
-        .nav-item i {
-            width: 20px;
-            height: 20px;
-        }
-
-        /* Main Content */
-        .admin-main {
-            padding: 2.5rem;
-            overflow-y: auto;
-        }
-
-        .admin-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 3rem;
-        }
-
-        .header-title h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 0.5rem;
-        }
-
-        .header-title p {
-            color: var(--text-muted);
-        }
-
-        /* Premium Stats */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
-        }
-
-        .premium-stat {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 2rem;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-
-        .premium-stat:hover {
-            transform: translateY(-5px);
-            border-color: var(--admin-primary);
-        }
-
-        .stat-glow {
-            position: absolute;
-            top: -50px;
-            right: -50px;
-            width: 150px;
-            height: 150px;
-            background: var(--admin-primary);
-            filter: blur(100px);
-            opacity: 0.1;
-        }
-
-        .stat-icon-wrapper {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-            color: white;
-        }
-
-        .total-users-icon {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-        }
-
-        .attendance-icon {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-
-        .work-icon {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
-
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 800;
-            display: block;
+        .stat-value {
+            color: #2563eb;
         }
 
         .stat-label {
-            color: var(--text-muted);
-            font-weight: 500;
+            color: #64748b;
         }
 
-        /* Grid Content */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 2rem;
+        .page-title {
+            background: white;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: white;
         }
 
-        .section-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 2rem;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        /* Team List */
-        .member-row {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            padding: 1rem;
-            border-radius: 16px;
-            transition: background 0.3s ease;
-        }
-
-        .member-row:hover {
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .avatar-ring {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            padding: 3px;
-            background: linear-gradient(to bottom, var(--admin-primary), transparent);
-        }
-
-        .avatar-inner {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: #1e293b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: white;
-        }
-
-        .member-details {
-            flex: 1;
-        }
-
-        .member-name {
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .member-status-pill {
-            font-size: 0.7rem;
-            padding: 0.2rem 0.6rem;
-            border-radius: 20px;
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-        }
-
-        /* Activity Timeline */
-        .timeline-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            position: relative;
-        }
-
-        .timeline-item {
-            display: flex;
-            gap: 1.5rem;
-            position: relative;
-        }
-
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: 11px;
-            top: 24px;
-            bottom: -24px;
-            width: 2px;
-            background: var(--glass-border);
-        }
-
-        .timeline-item:last-child::before {
-            display: none;
-        }
-
-        .timeline-dot {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #1e293b;
-            border: 2px solid var(--admin-primary);
-            z-index: 1;
-        }
-
-        /* Action Buttons */
-        .action-btn {
-            background: var(--admin-primary);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 12px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .action-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
-        }
-
-        @media (max-width: 1024px) {
-            .admin-layout {
-                grid-template-columns: 1fr;
-            }
-
-            .admin-sidebar {
-                display: none;
-            }
-
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
+        .admin-badge {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
     </style>
 </head>
 
 <body>
+    <!-- Animated Background (Matching Landing Page) -->
     <div class="animated-bg">
         <div class="gradient-orb orb-1"></div>
         <div class="gradient-orb orb-2"></div>
         <div class="grid-overlay"></div>
     </div>
 
-    <div class="admin-layout">
-        <!-- Sidebar -->
-        <aside class="admin-sidebar">
-            <div class="sidebar-logo">
-                <i data-lucide="shield-check"></i>
-                <span>GROFAST ADMIN</span>
+    <main class="main-content admin-content">
+        <header class="page-header">
+            <a href="../dashboard.html" class="back-btn">
+                <i data-lucide="arrow-left"></i>
+            </a>
+            <h1 class="page-title">Admin Panel</h1>
+            <div class="admin-badge">
+                <i data-lucide="shield"></i>
             </div>
+        </header>
 
-            <nav>
-                <ul class="nav-links">
-                    <li><a href="#" class="nav-item active"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
-                    <li><a href="#" class="nav-item"
-                            onclick="showToast('Feature Coming Soon: Mass Messaging', 'info')"><i
-                                data-lucide="megaphone"></i> Broadcast</a></li>
-                    <li><a href="#" class="nav-item"
-                            onclick="showToast('Feature Coming Soon: Roles & Permissions', 'info')"><i
-                                data-lucide="users"></i> Team Management</a></li>
-                    <li><a href="#" class="nav-item" onclick="showToast('Feature Coming Soon: Data Export', 'info')"><i
-                                data-lucide="file-text"></i> Reports</a></li>
-                    <li style="margin-top: auto;"><a href="../dashboard.html" class="nav-item"><i
-                                data-lucide="arrow-left-circle"></i> Back to App</a></li>
-                </ul>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="admin-main">
-            <header class="admin-header">
-                <div class="header-title">
-                    <h1>Command Center</h1>
-                    <p id="adminStatusText">Real-time team performance & activity monitoring</p>
+        <!-- Admin Stats -->
+        <section class="admin-stats">
+            <div class="admin-stat-card glass-card">
+                <div class="stat-icon users">
+                    <i data-lucide="users"></i>
                 </div>
-                <div class="header-actions">
-                    <button class="action-btn" id="addUserBtn">
-                        <i data-lucide="user-plus"></i>
-                        <span>Register Employee</span>
-                    </button>
-                </div>
-            </header>
-
-            <!-- Stats -->
-            <div class="stats-grid">
-                <div class="premium-stat">
-                    <div class="stat-glow"></div>
-                    <div class="stat-icon-wrapper total-users-icon">
-                        <i data-lucide="users"></i>
-                    </div>
-                    <span class="stat-number" id="totalUsers">--</span>
-                    <span class="stat-label">Total Employees</span>
-                </div>
-
-                <div class="premium-stat">
-                    <div class="stat-glow"></div>
-                    <div class="stat-icon-wrapper attendance-icon">
-                        <i data-lucide="calendar-check"></i>
-                    </div>
-                    <span class="stat-number" id="todayAttendance">0</span>
-                    <span class="stat-label">Present Today</span>
-                </div>
-
-                <div class="premium-stat">
-                    <div class="stat-glow"></div>
-                    <div class="stat-icon-wrapper work-icon">
-                        <i data-lucide="activity"></i>
-                    </div>
-                    <span class="stat-number" id="todayUpdates">0</span>
-                    <span class="stat-label">Daily Updates</span>
+                <div class="stat-info">
+                    <span class="stat-value" id="totalUsers">--</span>
+                    <span class="stat-label">Total Users</span>
                 </div>
             </div>
-
-            <div class="dashboard-grid">
-                <!-- Team Section -->
-                <div class="section-card">
-                    <div class="card-header">
-                        <h2 class="section-title">Team Roster</h2>
-                        <div class="field-filter">
-                            <button class="filter-btn active" data-field="all">All</button>
-                            <button class="filter-btn" data-field="video_editor">🎬</button>
-                            <button class="filter-btn" data-field="gen_ai">🤖</button>
-                            <button class="filter-btn" data-field="automation">⚙️</button>
-                        </div>
-                    </div>
-                    <div class="team-list" id="teamList">
-                        <div class="loader-placeholder"
-                            style="text-align: center; padding: 3rem; color: var(--text-muted);">
-                            <i data-lucide="loader-2" class="spin" style="width: 48px; height: 48px;"></i>
-                            <p>Loading real-time roster...</p>
-                        </div>
-                    </div>
+            <div class="admin-stat-card glass-card">
+                <div class="stat-icon attendance">
+                    <i data-lucide="calendar-check"></i>
                 </div>
-
-                <!-- Activity Timeline -->
-                <div class="section-card">
-                    <div class="card-header">
-                        <h2 class="section-title">Live Activity</h2>
-                    </div>
-                    <div class="timeline-list" id="todayActivity">
-                        <p style="color: var(--text-muted); text-align: center; padding: 2rem;">No live events captured
-                            yet.</p>
-                    </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="todayAttendance">0</span>
+                    <span class="stat-label">Today's Attendance</span>
                 </div>
             </div>
-        </main>
-    </div>
+            <div class="admin-stat-card glass-card">
+                <div class="stat-icon updates">
+                    <i data-lucide="activity"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="todayUpdates">0</span>
+                    <span class="stat-label">Today's Updates</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Team Overview -->
+        <section class="team-section">
+            <div class="section-header">
+                <h2 class="section-title">Team Members</h2>
+                <button class="btn-primary btn-sm" id="addUserBtn">
+                    <i data-lucide="user-plus"></i>
+                    <span>Add User</span>
+                </button>
+            </div>
+
+            <!-- Filter by Field -->
+            <div class="field-filter">
+                <button class="filter-btn active" data-field="all">All</button>
+                <button class="filter-btn" data-field="video_editor" title="Video Editor">🎬</button>
+                <button class="filter-btn" data-field="gen_ai" title="Gen AI">🤖</button>
+                <button class="filter-btn" data-field="automation" title="Automation">⚙️</button>
+                <button class="filter-btn" data-field="digital_marketing" title="Marketing">📢</button>
+            </div>
+
+            <div class="team-list" id="teamList">
+                <div class="sync-loader">
+                    <i data-lucide="refresh-cw" class="spin"
+                        style="width: 32px; height: 32px; margin-bottom: 1rem;"></i>
+                    <p>Fetching real-time data...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Today's Activity -->
+        <section class="activity-section">
+            <h2 class="section-title">Today's Activity</h2>
+            <div class="activity-list" id="todayActivity">
+                <div class="sync-loader">
+                    <p>Syncing activity log...</p>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <div class="toast-container" id="toastContainer"></div>
 
@@ -453,14 +174,6 @@
     <script src="../js/admin.js"></script>
     <script>
         lucide.createIcons();
-        function showToast(m, t) {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${t || 'info'}`;
-            toast.innerHTML = `<span class="toast-message">${m}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
     </script>
 </body>
 
