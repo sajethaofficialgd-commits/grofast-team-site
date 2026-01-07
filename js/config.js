@@ -1,7 +1,7 @@
 // Grofast Digital - Configuration
 
 const SUPABASE_URL = 'https://poatldvuvyhteenqrpka.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_DzWwUSNQKy-Ufen14qNxmw_ja24p1TA';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvYXRsZHZ1dnlodGVlbnFycGthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2NjcyNTgsImV4cCI6MjA4MzI0MzI1OH0.cLIjmSDzyzE-UY1CH7Yn16w6Ktb-oGyJ1TrPAlEPCSo';
 
 const N8N_WEBHOOKS = {
     attendance: 'https://n8n.srv1163761.hstgr.cloud/webhook/grofast-master-backup',
