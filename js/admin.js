@@ -90,27 +90,33 @@ async function syncSupabaseData() {
 }
 
 function loadAdminStats() {
-    // Total users (demo)
-    document.getElementById('totalUsers').textContent = DEMO_USERS.length;
+    // Get real employees from local storage (synced from Supabase)
+    const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+    const adminCount = employees.filter(e => e.role === ROLES.ADMIN).length;
+    document.getElementById('totalUsers').textContent = Math.max(0, employees.length - adminCount);
 
     // Today's attendance
     const today = new Date().toDateString();
     const attendance = JSON.parse(localStorage.getItem('gf_attendance') || '[]');
     const todayAttendance = attendance.filter(a => new Date(a.timestamp).toDateString() === today);
-    document.getElementById('todayAttendance').textContent = todayAttendance.length;
+    document.getElementById('totalUsers').parentElement.parentElement.querySelectorAll('.stat-value')[1].textContent = todayAttendance.length;
 
     // Today's work updates
     const updates = JSON.parse(localStorage.getItem('gf_work_updates') || '[]');
     const todayUpdates = updates.filter(u => new Date(u.timestamp).toDateString() === today);
-    document.getElementById('todayUpdates').textContent = todayUpdates.length;
+    document.getElementById('totalUsers').parentElement.parentElement.querySelectorAll('.stat-value')[2].textContent = todayUpdates.length;
 }
 
 function loadTeamMembers(filterField = 'all') {
     const container = document.getElementById('teamList');
+    if (!container) return;
+
     const today = new Date().toDateString();
     const attendance = JSON.parse(localStorage.getItem('gf_attendance') || '[]');
 
-    let users = DEMO_USERS.filter(u => u.role !== ROLES.ADMIN);
+    // Use real employees instead of demo users
+    let users = JSON.parse(localStorage.getItem('employees') || '[]')
+        .filter(u => u.role !== ROLES.ADMIN);
 
     if (filterField !== 'all') {
         users = users.filter(u => u.field === filterField);
@@ -118,9 +124,9 @@ function loadTeamMembers(filterField = 'all') {
 
     container.innerHTML = users.map(user => {
         const hasAttendance = attendance.find(a =>
-            a.userId === user.id && new Date(a.timestamp).toDateString() === today
+            String(a.userId) === String(user.id) && new Date(a.timestamp).toDateString() === today
         );
-        const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+        const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : '??';
         const fieldInfo = getFieldInfo(user.field);
 
         return `
@@ -129,25 +135,27 @@ function loadTeamMembers(filterField = 'all') {
                 <div class="member-info">
                     <div class="member-name">${user.name} ${user.employee_id ? `<span class="id-badge">${user.employee_id}</span>` : ''}</div>
                     <div class="member-meta">
-                        <span class="member-field">${fieldInfo?.icon || ''} ${fieldInfo?.name || user.field}</span>
+                        <span class="member-field">${fieldInfo?.icon || '👤'} ${fieldInfo?.name || user.field || 'Staff'}</span>
                         <span class="member-status ${hasAttendance ? '' : 'absent'}"></span>
                         <span>${hasAttendance ? 'Present' : 'Absent'}</span>
                     </div>
                 </div>
                 <div class="member-actions">
                     <button class="member-action-btn" onclick="viewMember('${user.id}')" title="View">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
+                        <i data-lucide="eye"></i>
+                    </button>
+                    <button class="member-action-btn" onclick="deleteUser('${user.id}')" title="Delete" style="color: #ef4444;">
+                        <i data-lucide="trash-2"></i>
                     </button>
                 </div>
             </div>
         `;
     }).join('');
 
+    lucide.createIcons();
+
     if (users.length === 0) {
-        container.innerHTML = '<div class="no-activity">No team members in this field.</div>';
+        container.innerHTML = '<div class="no-activity">No team members found.</div>';
     }
 }
 
