@@ -259,15 +259,34 @@ async function deleteEmployeeFromDB(id) {
 
 // Get attendance records
 async function getAttendanceFromDB(filters = {}) {
+    // Helper to normalize records with consistent field names
+    const normalizeRecord = (r) => ({
+        ...r,
+        userId: r.userId || r.user_id,
+        user_id: r.user_id || r.userId,
+        userName: r.userName || r.user_name,
+        user_name: r.user_name || r.userName,
+        timestamp: r.timestamp || r.created_at || new Date(r.date).toISOString()
+    });
+
+    // Get from localStorage first (always available)
+    let localRecords = JSON.parse(localStorage.getItem('gf_attendance') || '[]');
+    localRecords = localRecords.map(normalizeRecord);
+
+    if (filters.userId) {
+        const uid = String(filters.userId);
+        localRecords = localRecords.filter(r =>
+            String(r.userId) === uid || String(r.user_id) === uid
+        );
+    }
+    if (filters.date) {
+        localRecords = localRecords.filter(r => r.date === filters.date);
+    }
+
+    // If no Supabase, return localStorage only
     if (!supabaseClient) {
-        let records = JSON.parse(localStorage.getItem('gf_attendance') || '[]');
-        if (filters.userId) {
-            records = records.filter(r => r.userId == filters.userId);
-        }
-        if (filters.date) {
-            records = records.filter(r => r.date === filters.date);
-        }
-        return records;
+        console.log(`📊 getAttendanceFromDB (local): ${localRecords.length} records`);
+        return localRecords;
     }
 
     try {
@@ -275,11 +294,9 @@ async function getAttendanceFromDB(filters = {}) {
 
         if (filters.userId) {
             const uid = Number(filters.userId);
-            if (isNaN(uid)) {
-                console.warn('⚠️ getAttendanceFromDB: userId is invalid', filters.userId);
-                return [];
+            if (!isNaN(uid)) {
+                query = query.eq('user_id', uid);
             }
-            query = query.eq('user_id', uid);
         }
 
         const { data, error } = await query
@@ -287,11 +304,21 @@ async function getAttendanceFromDB(filters = {}) {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        console.log(`📊 getAttendanceFromDB: Retrieved ${data?.length || 0} records for user ${filters.userId}`);
-        return data || [];
+
+        // Normalize Supabase data
+        const supabaseRecords = (data || []).map(normalizeRecord);
+        console.log(`📊 getAttendanceFromDB (cloud): ${supabaseRecords.length} records`);
+
+        // Merge: Supabase takes priority, but include local records not in Supabase
+        if (supabaseRecords.length > 0) {
+            return supabaseRecords;
+        }
+
+        // If no Supabase records, return local
+        return localRecords;
     } catch (err) {
-        console.error('DB Error:', err);
-        return [];
+        console.error('DB Error (falling back to local):', err);
+        return localRecords;
     }
 }
 
@@ -301,19 +328,28 @@ async function addAttendanceToDB(attendanceData) {
     const saveToLocal = (data) => {
         try {
             const records = JSON.parse(localStorage.getItem('gf_attendance') || '[]');
-            // For updates, find and replace
-            if (data.id || data.employee_id) {
-                const index = records.findIndex(r =>
-                    (r.id && r.id == data.id) ||
-                    (r.date === data.date && (r.user_id == data.user_id || r.employee_id == data.employee_id))
-                );
-                if (index !== -1) {
-                    records[index] = { ...records[index], ...data, timestamp: new Date().toISOString() };
-                } else {
-                    records.unshift({ ...data, timestamp: new Date().toISOString() });
-                }
+            const dataUserId = String(data.userId || data.user_id || data.employee_id);
+
+            // For updates, find and replace by matching user + date
+            const index = records.findIndex(r => {
+                const recordUserId = String(r.userId || r.user_id || r.employee_id);
+                return r.date === data.date && recordUserId === dataUserId;
+            });
+
+            // Ensure both naming conventions are present
+            const normalizedData = {
+                ...data,
+                userId: dataUserId,
+                user_id: dataUserId,
+                userName: data.userName || data.user_name,
+                user_name: data.user_name || data.userName,
+                timestamp: new Date().toISOString()
+            };
+
+            if (index !== -1) {
+                records[index] = { ...records[index], ...normalizedData };
             } else {
-                records.unshift({ ...data, timestamp: new Date().toISOString() });
+                records.unshift(normalizedData);
             }
             localStorage.setItem('gf_attendance', JSON.stringify(records.slice(0, 100)));
         } catch (e) {
@@ -322,12 +358,20 @@ async function addAttendanceToDB(attendanceData) {
     };
 
     if (!supabaseClient) {
+        const userId = attendanceData.userId || attendanceData.employee_id || attendanceData.user_id;
+        const userName = attendanceData.userName || attendanceData.employee_name || attendanceData.user_name;
         const localData = {
             id: Date.now().toString(),
             ...attendanceData,
+            // Ensure both naming conventions work
+            userId: userId,
+            user_id: userId,
+            userName: userName,
+            user_name: userName,
             timestamp: new Date().toISOString()
         };
         saveToLocal(localData);
+        console.log('📝 Saved attendance to localStorage:', localData);
         return localData;
     }
 

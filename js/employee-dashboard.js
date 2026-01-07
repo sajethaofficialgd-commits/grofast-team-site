@@ -664,8 +664,13 @@ async function confirmAttendance() {
     }
 
     const newRecord = {
+        // Include BOTH naming conventions for compatibility
         employee_id: currentEmployee.id,
+        userId: currentEmployee.id,
+        user_id: currentEmployee.id,
         employee_name: currentEmployee.name,
+        userName: currentEmployee.name,
+        user_name: currentEmployee.name,
         date: getTodayStr(),
         time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
         check_in_time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
