@@ -34,7 +34,37 @@ class AuthManager {
     }
 
     async login(email, password, rememberMe = false) {
-        // Demo mode login
+        // Supabase login (Real Accounts)
+        if (this.supabase && !APP_CONFIG.debug) {
+            try {
+                const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+
+                // Fetch extra profile data from employees table using UUID
+                const { data: profile, error: profileError } = await this.supabase
+                    .from('employees')
+                    .select('*')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (profileError) {
+                    console.warn('Profile not found in employees table, using auth metadata');
+                }
+
+                return this.createSession({
+                    id: data.user.id,
+                    email: data.user.email,
+                    name: profile?.name || data.user.user_metadata?.full_name || 'User',
+                    role: profile?.role || 'employee',
+                    ...profile
+                }, rememberMe);
+            } catch (authError) {
+                console.error('Real Auth Failed:', authError.message);
+                throw authError;
+            }
+        }
+
+        // Demo fallback (only if debug is true)
         if (APP_CONFIG.debug) {
             const user = DEMO_USERS.find(u =>
                 (u.email === email || u.email.split('@')[0] === email) && u.password === password
@@ -42,24 +72,10 @@ class AuthManager {
             if (user) {
                 return this.createSession(user, rememberMe);
             }
-            throw new Error('Invalid email or password');
+            throw new Error('Invalid demo credentials');
         }
 
-        // Supabase login
-        if (this.supabase) {
-            const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
-            if (error) throw error;
-
-            const { data: profile } = await this.supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', data.user.id)
-                .single();
-
-            return this.createSession({ ...data.user, ...profile }, rememberMe);
-        }
-
-        throw new Error('Authentication not configured');
+        throw new Error('Please check your email and password');
     }
 
     createSession(user, rememberMe) {

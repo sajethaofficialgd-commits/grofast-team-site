@@ -813,7 +813,7 @@ async function getLearningLogsFromDB(userId) {
         const { data, error } = await supabaseClient
             .from('learning_logs')
             .select('*')
-            .eq('user_id', Number(userId))
+            .eq('user_id', userId)
             .order('date', { ascending: false });
 
         if (error) throw error;
@@ -998,7 +998,7 @@ async function getEventsFromDB(userId) {
         const { data, error } = await supabaseClient
             .from('events')
             .select('*')
-            .eq('user_id', Number(userId))
+            .eq('user_id', userId)
             .order('date', { ascending: true });
 
         if (error) throw error;
@@ -1023,7 +1023,7 @@ async function saveEventToDB(event) {
         const { data, error } = await supabaseClient
             .from('events')
             .insert([{
-                user_id: Number(event.user_id),
+                user_id: event.user_id,
                 title: event.title,
                 description: event.description || '',
                 date: event.date,
@@ -1082,7 +1082,7 @@ async function getMoodLogsFromDB(userId, limit = 30) {
         const { data, error } = await supabaseClient
             .from('mood_logs')
             .select('*')
-            .eq('user_id', Number(userId))
+            .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(limit);
 
@@ -1112,7 +1112,7 @@ async function saveMoodLogToDB(userId, mood) {
         const { error } = await supabaseClient
             .from('mood_logs')
             .insert([{
-                user_id: Number(userId),
+                user_id: userId,
                 mood: mood,
                 date: new Date().toISOString().split('T')[0]
             }]);
