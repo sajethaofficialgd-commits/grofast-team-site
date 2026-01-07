@@ -21,7 +21,7 @@ const OFFICE_LOCATIONS = [
 // Allow attendance from any location? Set to true for testing, false for production
 const REQUIRE_OFFICE_LOCATION = false; // Set to true to enable geofencing
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (!auth.requireAuth()) return;
 
     // Set current date
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             attendanceFlow.style.display = 'none';
         }
         // Load history even on desktop
-        loadAttendanceHistory();
+        await syncAndLoadHistory();
         return; // Stop here for desktop
     }
 
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Load attendance history
-    loadAttendanceHistory();
+    await syncAndLoadHistory();
 
     // Event listeners
     document.getElementById('startBtn')?.addEventListener('click', startCheckin);
@@ -185,7 +185,7 @@ function showAlreadyMarked() {
         </div>
     `;
 
-    loadAttendanceHistory();
+    syncAndLoadHistory();
 }
 
 async function startCheckin() {
@@ -503,35 +503,52 @@ async function confirmCheckin() {
     };
 
     try {
-        // Save to localStorage
-        const attendance = JSON.parse(localStorage.getItem('gf_attendance') || '[]');
-        attendance.unshift(attendanceRecord);
-        localStorage.setItem('gf_attendance', JSON.stringify(attendance));
+        // Initialize Supabase if available
+        if (typeof initSupabase === 'function') initSupabase();
 
-        // Send to n8n webhook (if configured)
-        if (N8N_WEBHOOKS.attendance !== 'YOUR_N8N_ATTENDANCE_WEBHOOK_URL') {
-            try {
-                await fetch(N8N_WEBHOOKS.attendance, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        ...attendanceRecord,
-                        photo: undefined // Don't send photo to webhook, too large
-                    })
-                });
-            } catch (e) {
-                console.log('Webhook failed, continuing...');
-            }
+        // 1. Save to Supabase (this also handles local storage internally via addAttendanceToDB)
+        if (typeof addAttendanceToDB === 'function') {
+            await addAttendanceToDB({
+                ...attendanceRecord,
+                date: new Date().toISOString().split('T')[0]
+            });
+        } else {
+            // Manual fallback if supabase.js is missing
+            const attendance = JSON.parse(localStorage.getItem('gf_attendance') || '[]');
+            attendance.unshift(attendanceRecord);
+            localStorage.setItem('gf_attendance', JSON.stringify(attendance.slice(0, 50)));
         }
 
         toast.success('Attendance marked successfully!');
         showAlreadyMarked();
-
     } catch (error) {
+        console.error('Save Error:', error);
         toast.error('Failed to save attendance. Please try again.');
         btn.disabled = false;
         btn.innerHTML = 'Confirm Check-in';
     }
+}
+
+// Added sync function for standalone page
+async function syncAndLoadHistory() {
+    if (typeof initSupabase === 'function') {
+        initSupabase();
+        if (typeof getAttendanceFromDB === 'function') {
+            const user = auth.getCurrentUser();
+            const attendance = await getAttendanceFromDB({ userId: user.id });
+            if (attendance) {
+                const mapped = attendance.map(a => ({
+                    ...a,
+                    userId: a.user_id,
+                    userName: a.user_name,
+                    timestamp: a.created_at || new Date(a.date).toISOString(),
+                    photo: a.photo_url || a.photo
+                }));
+                localStorage.setItem('gf_attendance', JSON.stringify(mapped));
+            }
+        }
+    }
+    loadAttendanceHistory();
 }
 
 function showStep(stepNum) {

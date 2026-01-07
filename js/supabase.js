@@ -297,53 +297,112 @@ async function getAttendanceFromDB(filters = {}) {
 
 // Add attendance record
 async function addAttendanceToDB(attendanceData) {
+    // Always save to localStorage as a fallback/persistent cache
+    const saveToLocal = (data) => {
+        try {
+            const records = JSON.parse(localStorage.getItem('gf_attendance') || '[]');
+            // For updates, find and replace
+            if (data.id || data.employee_id) {
+                const index = records.findIndex(r =>
+                    (r.id && r.id == data.id) ||
+                    (r.date === data.date && (r.user_id == data.user_id || r.employee_id == data.employee_id))
+                );
+                if (index !== -1) {
+                    records[index] = { ...records[index], ...data, timestamp: new Date().toISOString() };
+                } else {
+                    records.unshift({ ...data, timestamp: new Date().toISOString() });
+                }
+            } else {
+                records.unshift({ ...data, timestamp: new Date().toISOString() });
+            }
+            localStorage.setItem('gf_attendance', JSON.stringify(records.slice(0, 100)));
+        } catch (e) {
+            console.error('Local Storage Error:', e);
+        }
+    };
+
     if (!supabaseClient) {
-        const records = JSON.parse(localStorage.getItem('gf_attendance') || '[]');
-        const newRecord = {
+        const localData = {
             id: Date.now().toString(),
             ...attendanceData,
             timestamp: new Date().toISOString()
         };
-        records.push(newRecord);
-        localStorage.setItem('gf_attendance', JSON.stringify(records));
-        return newRecord;
+        saveToLocal(localData);
+        return localData;
     }
 
     try {
-        const { data, error } = await supabaseClient
-            .from('attendance')
-            .insert([{
-                user_id: attendanceData.userId || attendanceData.employee_id,
-                user_name: attendanceData.userName || attendanceData.employee_name,
-                type: attendanceData.type,
-                date: attendanceData.date,
-                time: attendanceData.time || attendanceData.check_in_time,
-                check_in_time: attendanceData.check_in_time || attendanceData.time,
-                check_out_time: attendanceData.check_out_time,
-                total_hours: attendanceData.total_hours || attendanceData.totalHours,
-                status: attendanceData.status,
-                photo_url: attendanceData.photoUrl || attendanceData.photo_url || null,
-                location: attendanceData.location || null,
-                work_mode: attendanceData.work_mode || attendanceData.workMode || null,
-                latitude: attendanceData.latitude || null,
-                longitude: attendanceData.longitude || null
-            }])
-            .select()
-            .single();
+        const recordToSave = {
+            user_id: attendanceData.userId || attendanceData.employee_id || attendanceData.user_id,
+            user_name: attendanceData.userName || attendanceData.employee_name || attendanceData.user_name,
+            type: attendanceData.type || 'check_in',
+            date: attendanceData.date,
+            check_in_time: attendanceData.check_in_time || attendanceData.time || attendanceData.checkInTime,
+            check_out_time: attendanceData.check_out_time || attendanceData.checkOutTime || null,
+            total_hours: (attendanceData.total_hours || attendanceData.totalHours || "").toString(),
+            status: attendanceData.status || 'present',
+            photo_url: attendanceData.photo_url || attendanceData.photoUrl || attendanceData.photo || null,
+            location: typeof attendanceData.location === 'string' ? attendanceData.location :
+                (attendanceData.location ? `${attendanceData.location.latitude}, ${attendanceData.location.longitude}` : null),
+            work_mode: attendanceData.work_mode || attendanceData.workMode || 'Office',
+            latitude: attendanceData.latitude || (attendanceData.location?.latitude) || null,
+            longitude: attendanceData.longitude || (attendanceData.location?.longitude) || null
+        };
 
-        if (error) throw error;
+        // If we have an ID, we should update/upsert
+        let query;
+        if (attendanceData.id) {
+            query = supabaseClient
+                .from('attendance')
+                .upsert([{ id: attendanceData.id, ...recordToSave }], { onConflict: 'id' });
+        } else {
+            // Check if record for today already exists to prevent duplicates if app logic fails
+            const { data: existing } = await supabaseClient
+                .from('attendance')
+                .select('id')
+                .eq('user_id', recordToSave.user_id)
+                .eq('date', recordToSave.date)
+                .maybeSingle();
 
-        // Backup to Google Sheets via n8n
+            if (existing) {
+                query = supabaseClient
+                    .from('attendance')
+                    .update(recordToSave)
+                    .eq('id', existing.id);
+            } else {
+                query = supabaseClient
+                    .from('attendance')
+                    .insert([recordToSave]);
+            }
+        }
+
+        const { data, error } = await query.select().single();
+
+        if (error) {
+            // If it's a foreign key error, the user doesn't exist in Supabase Employees table
+            if (error.code === '23503') {
+                console.warn('Foreign key violation: User ID likely doesn\'t exist in Employees table. Saving to local only.');
+                saveToLocal(recordToSave);
+                return { ...recordToSave, id: 'temp_' + Date.now() };
+            }
+            throw error;
+        }
+
+        // Success - save to local as cache
+        saveToLocal(data);
+
+        // Backup to Google Sheets
         callN8NWebhook('attendance', {
-            ...attendanceData,
-            db_id: data.id,
-            source: 'dashboard'
+            ...data,
+            source: 'dashboard_sync'
         });
 
         return data;
     } catch (err) {
-        console.error('DB Error:', err);
-        return null;
+        console.error('DB Attendance Error:', err);
+        // Fallback to local
+        saveToLocal(attendanceData);
+        return { ...attendanceData, id: 'err_' + Date.now() };
     }
 }
 

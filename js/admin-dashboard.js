@@ -34,13 +34,85 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // Initialize dashboard data
-function initDashboard() {
+async function initDashboard() {
+    // 1. Initial render from local data (fast)
+    updateStats();
+    renderActivityList();
+    renderEmployeesPreview();
+
+    // 2. Sync fresh data from Supabase
+    if (typeof initSupabase === 'function') {
+        initSupabase();
+        await syncSupabaseData();
+    }
+
+    // 3. Final render with fresh data
     updateStats();
     renderActivityList();
     renderEmployeesPreview();
     renderEmployeesTable();
     renderUpdatesTimeline();
     populateEmployeeSelect();
+}
+
+// Sync data from Supabase to local store for compatibility with existing sync functions
+async function syncSupabaseData() {
+    if (typeof getAttendanceFromDB !== 'function') return;
+
+    try {
+        console.log('🔄 Syncing data from Supabase...');
+
+        // 1. Sync Employees
+        if (typeof getEmployeesFromDB === 'function') {
+            const employees = await getEmployeesFromDB();
+            if (employees && employees.length > 0) {
+                localStorage.setItem('employees', JSON.stringify(employees));
+            }
+        }
+
+        // 2. Sync Attendance
+        const attendance = await getAttendanceFromDB();
+        if (attendance && attendance.length > 0) {
+            const mappedAttendance = attendance.map(a => ({
+                ...a,
+                userId: a.user_id,
+                userName: a.user_name,
+                timestamp: a.created_at || new Date(a.date).toISOString()
+            }));
+            localStorage.setItem('gf_attendance', JSON.stringify(mappedAttendance));
+        }
+
+        // 3. Sync Work Updates
+        if (typeof getWorkUpdatesFromDB === 'function') {
+            const updates = await getWorkUpdatesFromDB();
+            if (updates && updates.length > 0) {
+                const mappedUpdates = updates.map(u => ({
+                    ...u,
+                    userId: u.user_id,
+                    userName: u.user_name,
+                    timestamp: u.created_at || new Date(u.date).toISOString()
+                }));
+                localStorage.setItem('gf_work_updates', JSON.stringify(mappedUpdates));
+            }
+        }
+
+        // 4. Sync Activity Log
+        if (typeof getActivityLogFromDB === 'function') {
+            const logs = await getActivityLogFromDB(50);
+            if (logs && logs.length > 0) {
+                const mappedLogs = logs.map(l => ({
+                    ...l,
+                    employee: l.employee_name,
+                    timestamp: l.created_at
+                }));
+                localStorage.setItem('activityLog', JSON.stringify(mappedLogs));
+            }
+        }
+
+        console.log('✅ Sync complete!');
+    } catch (err) {
+        console.warn('Sync failed:', err);
+    }
 }
 
 // Update statistics
@@ -189,7 +261,10 @@ function renderEmployeesTable(filter = '') {
                 <div class="table-employee">
                     <div class="table-avatar">${getInitials(emp.name)}</div>
                     <div>
-                        <span>${emp.name}</span>
+                        <div class="table-name-flex">
+                            <span>${emp.name}</span>
+                            ${emp.employee_id ? `<span class="id-badge">${emp.employee_id}</span>` : ''}
+                        </div>
                         <p class="employee-role-subtitle">${rolesDisplay}</p>
                     </div>
                 </div>
@@ -450,9 +525,11 @@ function setupFormHandlers() {
         }
 
         const employees = getEmployees();
+        const name = document.getElementById('empName').value.trim();
         const newEmployee = {
             id: Date.now(), // Use timestamp for unique ID
-            name: document.getElementById('empName').value.trim(),
+            employee_id: generateEmployeeCode(name, employees),
+            name: name,
             email: document.getElementById('empEmail').value.trim(),
             phone: document.getElementById('empPhone').value.trim(),
             department: document.getElementById('empDepartment').value,
@@ -1974,4 +2051,30 @@ function showOnboardingOptions(emailLink, waLink) {
 
     modal.classList.remove('hidden');
     lucide.createIcons();
+}
+
+/**
+ * Generates a formal employee code based on name and existing count
+ * @param {string} name 
+ * @param {Array} employees 
+ * @returns {string} e.g. GD-SAN-001
+ */
+function generateEmployeeCode(name, employees) {
+    if (!name) return 'GD-UNK-000';
+
+    // Get initials (up to 3)
+    const initials = name.split(' ')
+        .map(word => word.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 3);
+
+    const prefix = `GD-${initials}`;
+
+    // Find how many with this prefix already exist
+    const count = employees.filter(emp =>
+        emp.employee_id && emp.employee_id.startsWith(prefix)
+    ).length + 1;
+
+    return `${prefix}-${count.toString().padStart(3, '0')}`;
 }

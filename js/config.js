@@ -34,6 +34,7 @@ const FIELDS = {
 const DEMO_USERS = [
     {
         id: 1,
+        employee_id: 'GD-ADM-001',
         email: 'grofastdigital@gmail.com',
         password: 'Grofast@123',
         name: 'Grofast Admin',
@@ -45,6 +46,7 @@ const DEMO_USERS = [
     },
     {
         id: 2,
+        employee_id: 'GD-SAJ-002',
         email: 'sajeth@grofast.com',
         password: 'password123',
         name: 'Sajeth Official',
@@ -56,6 +58,7 @@ const DEMO_USERS = [
     },
     {
         id: 3,
+        employee_id: 'GD-RAH-003',
         email: 'rahul@grofast.com',
         password: 'password123',
         name: 'Rahul Team',
@@ -67,6 +70,7 @@ const DEMO_USERS = [
     },
     {
         id: 4,
+        employee_id: 'GD-PRI-004',
         email: 'priya@grofast.com',
         password: 'password123',
         name: 'Priya Sharma',
@@ -78,6 +82,7 @@ const DEMO_USERS = [
     },
     {
         id: 5,
+        employee_id: 'GD-NAV-005',
         email: 'sajeethasiva6@gmail.com',
         password: 'Sara@1545',
         name: 'Naveena',

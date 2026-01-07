@@ -782,6 +782,24 @@
     flex-direction: column;
 }
 
+.table-name-flex {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.id-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0, 212, 255, 0.1);
+    color: var(--accent-cyan);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
 .employee-role-subtitle {
     font-size: var(--font-size-xs);
     color: var(--text-secondary);

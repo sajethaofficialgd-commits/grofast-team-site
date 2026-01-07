@@ -70,6 +70,19 @@
     color: var(--text-secondary);
 }
 
+.user-id-text {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+}
+
+.user-meta-header {
+    display: flex;
+    flex-direction: column;
+}
+
 .sidebar-toggle {
     display: none;
     padding: var(--space-2);

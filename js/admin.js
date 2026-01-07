@@ -13,11 +13,80 @@ document.addEventListener('DOMContentLoaded', () => {
     initAdmin();
 });
 
-function initAdmin() {
+async function initAdmin() {
+    // 1. Initial load from local
     loadAdminStats();
     loadTeamMembers();
     loadTodayActivity();
     setupFilters();
+
+    // 2. Sync from Supabase
+    if (typeof initSupabase === 'function') {
+        initSupabase();
+        await syncSupabaseData();
+
+        // 3. Reload with fresh data
+        loadAdminStats();
+        loadTeamMembers();
+        loadTodayActivity();
+    }
+}
+
+async function syncSupabaseData() {
+    if (typeof getAttendanceFromDB !== 'function') return;
+
+    try {
+        console.log('🔄 Syncing admin data from Supabase...');
+
+        // 1. Sync Employees
+        if (typeof getEmployeesFromDB === 'function') {
+            const employees = await getEmployeesFromDB();
+            if (employees && employees.length > 0) {
+                localStorage.setItem('employees', JSON.stringify(employees));
+            }
+        }
+
+        // 2. Sync Attendance
+        const attendance = await getAttendanceFromDB();
+        if (attendance) {
+            const mapped = attendance.map(a => ({
+                ...a,
+                userId: a.user_id,
+                userName: a.user_name,
+                timestamp: a.created_at || new Date(a.date).toISOString()
+            }));
+            localStorage.setItem('gf_attendance', JSON.stringify(mapped));
+        }
+
+        // 3. Sync Work Updates
+        if (typeof getWorkUpdatesFromDB === 'function') {
+            const updates = await getWorkUpdatesFromDB();
+            if (updates) {
+                const mapped = updates.map(u => ({
+                    ...u,
+                    userId: u.user_id,
+                    userName: u.user_name,
+                    timestamp: u.created_at || new Date(u.date).toISOString()
+                }));
+                localStorage.setItem('gf_work_updates', JSON.stringify(mapped));
+            }
+        }
+
+        // 4. Sync Activity Log
+        if (typeof getActivityLogFromDB === 'function') {
+            const logs = await getActivityLogFromDB(50);
+            if (logs && logs.length > 0) {
+                const mappedLogs = logs.map(l => ({
+                    ...l,
+                    employee: l.employee_name,
+                    timestamp: l.created_at
+                }));
+                localStorage.setItem('activityLog', JSON.stringify(mappedLogs));
+            }
+        }
+    } catch (err) {
+        console.warn('Admin sync failed:', err);
+    }
 }
 
 function loadAdminStats() {
@@ -58,7 +127,7 @@ function loadTeamMembers(filterField = 'all') {
             <div class="team-member">
                 <div class="member-avatar">${initials}</div>
                 <div class="member-info">
-                    <div class="member-name">${user.name}</div>
+                    <div class="member-name">${user.name} ${user.employee_id ? `<span class="id-badge">${user.employee_id}</span>` : ''}</div>
                     <div class="member-meta">
                         <span class="member-field">${fieldInfo?.icon || ''} ${fieldInfo?.name || user.field}</span>
                         <span class="member-status ${hasAttendance ? '' : 'absent'}"></span>
@@ -147,5 +216,5 @@ function viewMember(userId) {
     const updates = JSON.parse(localStorage.getItem('gf_work_updates') || '[]')
         .filter(u => u.userId === userId);
 
-    alert(`User Details\n\nName: ${user.name}\nEmail: ${user.email}\nRole: ${user.role}\nField: ${fieldInfo?.name || 'N/A'}\n\nTotal Attendance: ${attendance.length}\nTotal Work Updates: ${updates.length}`);
+    alert(`User Details\n\nName: ${user.name}\nID: ${user.employee_id || 'N/A'}\nEmail: ${user.email}\nRole: ${user.role}\nField: ${fieldInfo?.name || 'N/A'}\n\nTotal Attendance: ${attendance.length}\nTotal Work Updates: ${updates.length}`);
 }

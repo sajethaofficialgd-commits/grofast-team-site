@@ -80,10 +80,12 @@ async function initDashboard() {
     const avatarEl = document.getElementById('sidebarAvatar');
     const nameEl = document.getElementById('sidebarName');
     const roleEl = document.getElementById('sidebarRole');
+    const empIdEl = document.getElementById('sidebarEmpId');
 
     if (avatarEl) avatarEl.textContent = getInitials(currentEmployee.name || 'User');
     if (nameEl) nameEl.textContent = currentEmployee.name;
     if (roleEl) roleEl.textContent = currentEmployee.role || currentEmployee.position;
+    if (empIdEl) empIdEl.textContent = currentEmployee.employee_id || '';
 
     // Handle profile photo for sidebar if it exists
     const photoUrl = currentEmployee.profile_photo || currentEmployee.photo;
@@ -383,10 +385,11 @@ async function initAttendanceSection() {
 }
 
 async function checkTodayAttendance() {
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const todayStr = getTodayStr();
+
     const attendance = await getEmployeeAttendance();
     const todayRecord = attendance.find(a => {
+        if (!a.date) return false;
         const recordDate = a.date.includes('T') ? a.date.split('T')[0] : a.date;
         return recordDate === todayStr;
     });
@@ -663,7 +666,7 @@ async function confirmAttendance() {
     const newRecord = {
         employee_id: currentEmployee.id,
         employee_name: currentEmployee.name,
-        date: now.toISOString().split('T')[0],
+        date: getTodayStr(),
         time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
         check_in_time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
         status: status,
@@ -675,12 +678,17 @@ async function confirmAttendance() {
 
     const result = await saveEmployeeAttendance(newRecord);
 
+    if (!result) {
+        showToast('Failed to save attendance. Trying to save locally...', 'warning');
+    }
+
     addActivity('login', currentEmployee.name, `Checked in at ${newRecord.check_in_time}`);
 
     // Reset camera section
     document.getElementById('cameraSection').classList.remove('active');
     capturedPhotoData = null;
 
+    // Refresh everything
     await checkTodayAttendance();
     await renderAttendanceHistory();
     await updateAttendanceStats();
@@ -689,14 +697,20 @@ async function confirmAttendance() {
     confirmBtn.disabled = false;
     confirmBtn.innerHTML = originalHtml;
 
-    showToast(`Checked in at ${newRecord.check_in_time}! Have a productive day.`, 'success');
+    if (result) {
+        showToast(`Checked in at ${newRecord.check_in_time}! Have a productive day.`, 'success');
+    }
 }
 
 // Checkout function
 async function checkOut() {
     const attendance = await getEmployeeAttendance();
-    const today = new Date().toDateString();
-    const todayRecord = attendance.find(a => new Date(a.date).toDateString() === today);
+    const todayStr = getTodayStr();
+    const todayRecord = attendance.find(a => {
+        if (!a.date) return false;
+        const recordDate = a.date.includes('T') ? a.date.split('T')[0] : a.date;
+        return recordDate === todayStr;
+    });
 
     if (!todayRecord) {
         showToast('No check-in record found for today.', 'error');
@@ -776,7 +790,7 @@ async function markAttendanceWithoutPhoto() {
 
     const newRecord = {
         employee_id: currentEmployee.id,
-        date: now.toISOString(),
+        date: getTodayStr(),
         check_in_time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
         status: status,
         location: 'Office',
@@ -2549,6 +2563,15 @@ async function getUnreadMessages() {
     const messages = await getChatMessages();
     // Simplified unread check for now
     return 0;
+}
+
+// Helper to get local date string YYYY-MM-DD
+function getTodayStr() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 // =============================================
